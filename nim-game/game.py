@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import List
-from abc import ABC, abstractmethod
 
 import random
+from abc import ABC
+from abc import abstractmethod
+from typing import List
 
 
 class Pile:

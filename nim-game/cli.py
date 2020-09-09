@@ -1,5 +1,6 @@
-from game import GameState, Pile
 import game
+from game import GameState
+from game import Pile
 
 
 def prompt_with(prompt: str) -> str:
