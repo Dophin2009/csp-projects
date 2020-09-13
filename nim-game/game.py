@@ -18,7 +18,7 @@ class Pile:
 
     @staticmethod
     def random() -> Pile:
-        sticks = random.randint(2, 10)
+        sticks = random.randint(2, 10)  # nosec
         return Pile(sticks)
 
 
