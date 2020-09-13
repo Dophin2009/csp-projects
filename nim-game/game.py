@@ -69,6 +69,7 @@ class Game:
     def loop(self):
         while not self.state.clear():
             self.next_turn()
+        self.interface.game_over(self.state)
 
     def next_turn(self):
         self.state.next_player()
