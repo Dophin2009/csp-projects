@@ -1,5 +1,4 @@
 import random
-import time
 
 from graphics import Circle
 from graphics import color_rgb
@@ -35,4 +34,3 @@ while True:
             disks[i].draw(win)
     win.redraw()
     update(30)
-    #  time.sleep(0.05)
