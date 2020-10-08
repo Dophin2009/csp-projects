@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 from enum import Enum
 from typing import Callable
@@ -18,9 +20,19 @@ class Facing(Enum):
     RIGHT = enum.auto()
     DOWN = enum.auto()
 
+    def next_clockwise(v: Facing) -> Facing:
+        switch = {Facing.LEFT: Facing.UP, Facing.UP: Facing.RIGHT,
+                  Facing.RIGHT: Facing.DOWN, Facing.DOWN: Facing.LEFT}
+        return switch[v]
+
+    def next_counter(v: Facing) -> Facing:
+        switch = {Facing.LEFT: Facing.DOWN, Facing.UP: Facing.LEFT,
+                  Facing.RIGHT: Facing.UP, Facing.DOWN: Facing.RIGHT}
+        return switch[v]
+
 
 class State:
-    def __init__(self, win: GraphWin, grid_dim: Tuple[int, int],
+    def __init__(self, grid_dim: Tuple[int, int],
                  start: Tuple[int, int], facing: Facing):
         grid_rows, grid_cols = grid_dim
         if grid_rows == 0 or grid_cols == 0:
@@ -28,7 +40,6 @@ class State:
         self.grid = [[0 for _ in range(grid_cols)] for _ in range(grid_rows)]
         self.grid[start[0]][start[1]] = 1
 
-        self.win = win
         self.facing = facing
 
     def num_of_cols(self) -> int:
@@ -80,18 +91,14 @@ class State:
         Make the robot turn 90 degrees to the right by changing the variable
         facing
         '''
-        switch = {Facing.LEFT: Facing.UP, Facing.UP: Facing.RIGHT,
-                  Facing.RIGHT: Facing.DOWN, Facing.DOWN: Facing.LEFT}
-        self.facing = switch[self.facing]
+        self.facing = Facing.next_clockwise(self.facing)
         return self.facing
 
     def turn_left(self) -> Facing:
         '''
         Make the robot turn left 90 degrees by changing the variable facing
         '''
-        switch = {Facing.LEFT: Facing.DOWN, Facing.UP: Facing.LEFT,
-                  Facing.RIGHT: Facing.UP, Facing.DOWN: Facing.RIGHT}
-        self.facing = switch[self.facing]
+        self.facing = Facing.next_counter(self.facing)
         return self.facing
 
     def can_move_forward(self) -> bool:
@@ -129,60 +136,68 @@ class State:
                   Facing.RIGHT: (0, 1), Facing.DOWN: (1, 0)}
         return switch
 
-    def display_grid(self):
-        '''
-        Displays the current grid in the graphics window
-        '''
-        for r in range(self.num_of_rows()):
-            for c in range(self.num_of_cols()):
-                square = Rectangle(Point(20 * c, 20 * r),
-                                   Point(20 * c + 20, 20 * r + 20))
-                square.draw(self.win)
-                square.setFill('white')
-                if self.grid[r][c] == 1:
-                    if self.facing == Facing.RIGHT:
-                        robot = Polygon(Point(20 * c, 20 * r),
-                                        Point(20 * c + 20, 20 * r + 10),
-                                        Point(20 * c, 20 * r + 20))
-                    elif self.facing == Facing.LEFT:
-                        robot = Polygon(Point(20 * c + 20, 20 * r),
-                                        Point(20 * c, 20 * r + 10),
-                                        Point(20 * c + 20, 20 * r + 20))
-                    elif self.facing == Facing.UP:
-                        robot = Polygon(Point(20 * c, 20 * r + 20),
-                                        Point(20 * c + 20, 20 * r + 20),
-                                        Point(20 * c + 10, 20 * r))
-                    elif self.facing == Facing.DOWN:
-                        robot = Polygon(Point(20 * c, 20 * r),
-                                        Point(20 * c + 20, 20 * r),
-                                        Point(20 * c + 10, 20 * r + 20))
-                    robot.draw(self.win)
-                    robot.setFill('black')
 
-    def close(self):
-        self.win.close()
+def display_grid(state: State, win: GraphWin, square_size: float):
+    '''
+    Displays the current grid in the graphics window
+    '''
+    for r in range(state.num_of_rows()):
+        for c in range(state.num_of_cols()):
+            square = Rectangle(Point(square_size * c, square_size * r),
+                               Point(square_size * c + square_size,
+                                     square_size * r + square_size))
+            square.draw(win)
+            square.setFill('white')
+            if state.grid[r][c] == 1:
+                if state.facing == Facing.RIGHT:
+                    robot = Polygon(Point(square_size * c, square_size * r),
+                                    Point(square_size * c + square_size,
+                                          square_size * r + 10),
+                                    Point(square_size * c,
+                                          square_size * r + square_size))
+                elif state.facing == Facing.LEFT:
+                    robot = Polygon(Point(square_size * c + square_size,
+                                          square_size * r),
+                                    Point(square_size * c,
+                                          square_size * r + 10),
+                                    Point(square_size * c + square_size,
+                                          square_size * r + square_size))
+                elif state.facing == Facing.UP:
+                    robot = Polygon(Point(square_size * c,
+                                          square_size * r + square_size),
+                                    Point(square_size * c + square_size,
+                                          square_size * r + square_size),
+                                    Point(square_size * c + 10,
+                                          square_size * r))
+                elif state.facing == Facing.DOWN:
+                    robot = Polygon(Point(square_size * c, square_size * r),
+                                    Point(square_size * c +
+                                          square_size, square_size * r),
+                                    Point(square_size * c + 10,
+                                          square_size * r + square_size))
+                robot.draw(win)
+                robot.setFill('black')
 
 
-Keybindings = Dict[List[str], Tuple[Callable[[State], bool], str]]
+Keybindings = Dict[List[str], Tuple[Callable[[State, GraphWin], bool], str]]
 
 
-def setup(keybinds: Keybindings):
+def setup(keybinds: Keybindings, square_size: int) -> Tuple[State, GraphWin]:
     '''
     Initializes the graphics and the list representing the grid
     '''
     rows, cols = (4, 9)
     start = (0, 4)
 
-    # figure out reasonable height and width of the graphics window
     grid_height = 0
-    row_scale = rows * 20
+    row_scale = rows * square_size
     if row_scale < 350:
         grid_height = 350
     else:
         grid_height = row_scale
 
     grid_width = 0
-    col_scale = cols * 20
+    col_scale = cols * square_size
     if col_scale < 350:
         grid_width = 350
     else:
@@ -198,25 +213,25 @@ def setup(keybinds: Keybindings):
     help_text.setFill("white")
     help_text.draw(win)
 
-    return State(win, (rows, cols), start, Facing.RIGHT)
+    return (State((rows, cols), start, Facing.RIGHT), win)
 
 
-def keybind_close(state: State) -> bool:
-    state.win.close()
+def keybind_close(state: State, win: GraphWin) -> bool:
+    win.close()
     return True
 
 
-def keybind_turn_right(state: State) -> bool:
+def keybind_turn_right(state: State, win: GraphWin) -> bool:
     state.turn_right()
     return False
 
 
-def keybind_turn_left(state: State) -> bool:
+def keybind_turn_left(state: State, win: GraphWin) -> bool:
     state.turn_left()
     return False
 
 
-def keybind_move_forward(state: State) -> bool:
+def keybind_move_forward(state: State, win: GraphWin) -> bool:
     state.move_forward()
     return False
 
@@ -226,7 +241,8 @@ def main():
                 ('l', 'Right'): (keybind_turn_right, 'turn right 90 degrees'),
                 ('h', 'Left'): (keybind_turn_left, 'turn left 90 degrees'),
                 ('k', 'Up'): (keybind_move_forward, 'move forward 1 space')}
-    state = setup(keybinds)
+    square_size = 20
+    state, win = setup(keybinds, square_size)
 
     '''
     The driver of the program. Takes user input through keys
@@ -234,11 +250,11 @@ def main():
     '''
     end = False
     while not end:
-        state.display_grid()
-        key = state.win.getKey()
+        display_grid(state, win, square_size)
+        key = win.getKey()
         for k, v in keybinds.items():
             if key in k:
-                end = v[0](state)
+                end = v[0](state, win)
                 break
 
 
