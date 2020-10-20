@@ -19,21 +19,38 @@ WIN_SIZE = 600
 
 
 def main():
-    game = Game(2, 9)
+    game = Game(2, 2)
     game.loop()
+    game.draw_game_over()
 
 
 class Game:
+    __y_offset = 30
+
     def __init__(self, num_players: int, pairs: int):
         self.__state = State(num_players, pairs)
-        self.__color_map = {i: random_color() for i in range(pairs)}
         self.win = GraphWin('Matching Game', WIN_SIZE, WIN_SIZE)
 
+        colors = set()
+        for _ in range(pairs):
+            c = random_color()
+            while c in colors:
+                c = random_color()
+            colors.add(c)
+
+        self.__color_map = {n: c for n, c in enumerate(colors)}
+
     def loop(self):
-        game_over = False
-        while not game_over:
+        while True:
             self.draw()
-            r, c = self.get_click_pos()
+            if self.__state.all_matched():
+                break
+
+            pos = self.wait_click_pos()
+            if pos is None:
+                continue
+
+            r, c = pos
             did_select = self.__state.select_card(r, c)
             if not did_select:
                 continue
@@ -47,22 +64,33 @@ class Game:
                 time.sleep(1)
                 self.__state.clear_selected()
 
-    def get_click_pos(self) -> Tuple[int, int]:
-        point = self.win.getMouse()
-        (x_size, y_size) = self.square_dim()
-        return (int(point.y / y_size), int(point.x / x_size))
-
     def draw(self):
+        y_offset = 30
+
         rows = self.__state.board_rows()
         cols = self.__state.board_cols()
-        y_size = self.win.height / rows
+        y_size = (self.win.height - y_offset) / rows
         x_size = self.win.width / cols
+
+        header = Rectangle(Point(0, 0), Point(self.win.width, y_offset))
+        header.setFill("grey")
+        header.draw(self.win)
+
+        score_spacing = self.win.width / (self.__state.num_players() + 1)
+        for i, score in enumerate(self.__state.player_points()):
+            score_text = Text(
+                Point((i + 1) * score_spacing, y_offset / 2), score)
+            if i == self.__state.current_player():
+                score_text.setStyle('bold')
+                score_text.setSize(18)
+            score_text.setTextColor("black")
+            score_text.draw(self.win)
 
         for r in range(rows):
             for c in range(cols):
                 card = self.__state.card_at(r, c)
                 rx = c * x_size
-                ry = r * y_size
+                ry = r * y_size + y_offset
 
                 rect = Rectangle(Point(rx, ry),
                                  Point(rx + x_size, ry + y_size))
@@ -70,24 +98,62 @@ class Game:
                 if card is None:
                     color = "black"
                 else:
-                    color = self.__color_map[card.value()]
+                    (color, fg) = self.__color_map[card.value()]
                     selected = self.__state.selected()
-                    if card.matched():
-                        rect.setFill(color)
-                        text = Text(Point(rx + (x_size / 2),
-                                          ry + (y_size / 2)),
-                                    card.value())
-                        text.draw(self.win)
-                    elif selected[0] == (r, c) or selected[1] == (r, c):
+                    if card.matched() \
+                            or selected[0] == (r, c) \
+                            or selected[1] == (r, c):
                         rect.setFill(color)
                     else:
                         rect.setFill("white")
 
                 rect.draw(self.win)
 
+    def draw_game_over(self):
+        width = 300
+        height = 50
+
+        winners = self.__state.highest_score_players()
+
+        tx = self.win.width / 2 - width / 2
+        ty = self.win.height / 2 - height / 2
+        rect = Rectangle(Point(tx, ty), Point(tx + width, ty + height))
+        rect.setFill("grey")
+        rect.draw(self.win)
+
+        if len(winners) == 1:
+            text_str = 'Player {} wins, click to exit'.format(winners[0])
+        else:
+            text_str = 'Players {} win, click to exit'.format(
+                ', '.join(str(w) for w in winners))
+        text = Text(Point(tx + width / 2, ty + 20), text_str)
+        text.setTextColor("black")
+        text.draw(self.win)
+
+        self.wait_click()
+
+        text.setText('exiting...')
+        time.sleep(1)
+        self.win.close()
+
+    def wait_click_pos(self) -> Optional[Tuple[int, int]]:
+        point = self.wait_click()
+        if point.y < self.__y_offset:
+            return None
+
+        (x_size, y_size) = self.square_dim()
+        return (int((point.y - self.__y_offset) / y_size),
+                int(point.x / x_size))
+
+    def wait_click(self) -> Point:
+        return self.win.getMouse()
+
+    def close(self):
+        self.win.close()
+
     def square_dim(self) -> Tuple[float, float]:
-        return (self.win.width / self.__state.board_cols(),
-                self.win.height / self.__state.board_rows())
+        y = (self.win.height - self.__y_offset) / self.__state.board_rows()
+        return (self.win.width / self.__state.board_cols(), y)
 
 
 class Card:
@@ -131,9 +197,15 @@ class State:
         self.__board = State.generate_board(pairs)
         self.__selected: Selection = (None, None)
 
+    def all_matched(self) -> bool:
+        return all(c is None or c.matched()
+                   for row in self.__board for c in row)
+
     def select_card(self, r: int, c: int) -> bool:
         v = self.card_at(r, c)
-        if v is Card.Empty or v.matched() is True or v == self.__selected[0]:
+        if v is Card.Empty \
+                or v.matched() is True \
+                or (r, c) == self.__selected[0]:
             return False
         elif self.__selected[0] is None:
             self.__selected = ((r, c), self.__selected[1])
@@ -159,16 +231,29 @@ class State:
     def selected(self) -> Selection:
         return self.__selected
 
+    def match_found(self):
+        self.card_at_tup(self.__selected[0]).flip()
+        self.card_at_tup(self.__selected[1]).flip()
+        self.__player_points[self.__current_player] += 1
+
     def next_player(self):
         if self.__current_player == self.__num_players - 1:
             self.__current_player = 0
         else:
             self.__current_player += 1
 
-    def match_found(self):
-        self.card_at_tup(self.__selected[0]).flip()
-        self.card_at_tup(self.__selected[1]).flip()
-        self.__player_points[self.__current_player] += 1
+    def current_player(self):
+        return self.__current_player
+
+    def highest_score_players(self) -> List[int]:
+        m = max(self.__player_points)
+        return [i for i, x in enumerate(self.__player_points) if x == m]
+
+    def player_points(self):
+        return self.__player_points
+
+    def num_players(self) -> int:
+        return self.__num_players
 
     def card_at(self, r: int, c: int) -> Optional[Card]:
         return self.__board[r][c]
@@ -214,11 +299,17 @@ def chunk_list(arr: List[T], n: int, p: T) -> Generator[List[T], None, None]:
             yield arr[i:i + n]
 
 
-def random_color() -> str:
+def random_color() -> Tuple[str, str]:
     r = random.randint(0, 255)
     g = random.randint(0, 255)
     b = random.randint(0, 255)
-    return graphics.color_rgb(r, g, b)
+
+    if (r * 0.299 + g * 0.587 + b * 0.114) > 186:
+        fg = "white"
+    else:
+        fg = "black"
+
+    return (graphics.color_rgb(r, g, b), fg)
 
 
 if __name__ == '__main__':
