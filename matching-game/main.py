@@ -19,9 +19,8 @@ WIN_SIZE = 600
 
 
 def main():
-    game = Game(2, 2)
+    game = Game(2, 11)
     game.loop()
-    game.draw_game_over()
 
 
 class Game:
@@ -39,6 +38,10 @@ class Game:
             colors.add(c)
 
         self.__color_map = {n: c for n, c in enumerate(colors)}
+
+        # for resetting
+        self.__reset_num_players = num_players
+        self.__reset_pairs = pairs
 
     def loop(self):
         while True:
@@ -63,6 +66,7 @@ class Game:
                     self.__state.next_player()
                 time.sleep(1)
                 self.__state.clear_selected()
+        self.draw_game_over()
 
     def draw(self):
         y_offset = 30
@@ -122,19 +126,22 @@ class Game:
         rect.draw(self.win)
 
         if len(winners) == 1:
-            text_str = 'Player {} wins, click to exit'.format(winners[0])
+            text_str = 'Player {} wins, press q to exit'.format(winners[0])
         else:
-            text_str = 'Players {} win, click to exit'.format(
+            text_str = 'Players {} win, press q to exit'.format(
                 ', '.join(str(w) for w in winners))
         text = Text(Point(tx + width / 2, ty + 20), text_str)
         text.setTextColor("black")
         text.draw(self.win)
 
-        self.wait_click()
-
-        text.setText('exiting...')
-        time.sleep(1)
-        self.win.close()
+        key = self.wait_key()
+        if key == 'q':
+            text.setText('exiting...')
+            time.sleep(1)
+            self.win.close()
+        else:
+            self.__init__(self.__reset_num_players, self.__reset_pairs)
+            self.loop()
 
     def wait_click_pos(self) -> Optional[Tuple[int, int]]:
         point = self.wait_click()
@@ -147,6 +154,9 @@ class Game:
 
     def wait_click(self) -> Point:
         return self.win.getMouse()
+
+    def wait_key(self) -> str:
+        return self.win.getKey()
 
     def close(self):
         self.win.close()
