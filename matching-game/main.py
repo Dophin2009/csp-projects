@@ -19,7 +19,7 @@ WIN_SIZE = 600
 
 
 def main():
-    game = Game(2, 11)
+    game = Game(2, 1)
     game.loop()
 
 
@@ -27,21 +27,24 @@ class Game:
     __y_offset = 30
 
     def __init__(self, num_players: int, pairs: int):
-        self.__state = State(num_players, pairs)
         self.win = GraphWin('Matching Game', WIN_SIZE, WIN_SIZE)
 
+        self.__reset_num_players = num_players
+        self.__reset_pairs = pairs
+
+        self.reset()
+
+    def reset(self):
+        self.__state = State(self.__reset_num_players, self.__reset_pairs)
+
         colors = set()
-        for _ in range(pairs):
+        for _ in range(self.__reset_pairs):
             c = random_color()
             while c in colors:
                 c = random_color()
             colors.add(c)
 
         self.__color_map = {n: c for n, c in enumerate(colors)}
-
-        # for resetting
-        self.__reset_num_players = num_players
-        self.__reset_pairs = pairs
 
     def loop(self):
         while True:
@@ -140,7 +143,7 @@ class Game:
             time.sleep(1)
             self.win.close()
         else:
-            self.__init__(self.__reset_num_players, self.__reset_pairs)
+            self.reset()
             self.loop()
 
     def wait_click_pos(self) -> Optional[Tuple[int, int]]:
