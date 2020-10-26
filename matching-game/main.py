@@ -19,7 +19,7 @@ WIN_SIZE = 600
 
 
 def main():
-    game = Game(2, 1)
+    game = Game(2, 11)
     game.loop()
 
 
@@ -45,6 +45,9 @@ class Game:
             colors.add(c)
 
         self.__color_map = {n: c for n, c in enumerate(colors)}
+
+        rect = Rectangle(Point(0, 0), Point(self.win.width, self.win.height))
+        rect.draw(self.win)
 
     def loop(self):
         while True:
@@ -105,15 +108,15 @@ class Game:
                 if card is None:
                     color = "black"
                 else:
-                    (color, fg) = self.__color_map[card.value()]
                     selected = self.__state.selected()
                     if card.matched() \
                             or selected[0] == (r, c) \
                             or selected[1] == (r, c):
-                        rect.setFill(color)
+                        (color, fg) = self.__color_map[card.value()]
                     else:
-                        rect.setFill("white")
+                        color = "white"
 
+                rect.setFill(color)
                 rect.draw(self.win)
 
     def draw_game_over(self):
