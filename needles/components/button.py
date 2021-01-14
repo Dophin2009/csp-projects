@@ -3,15 +3,16 @@ from __future__ import annotations
 from typing import Callable, Optional
 
 import pygame
+from pygame.event import Event
 
-from . import Component, ColorValue, MousePos, MouseButtons, Context
+from . import Component, ColorValue, Context
 
 
 class Button(Component):
 
     def __init__(self, w: int, h: int,
                  ic: ColorValue, ac: ColorValue,
-                 on_click: Optional[Callable[[MousePos, MouseButtons], None]],
+                 on_click_action: Optional[Callable[[Event], None]],
                  px: int = 0, py: int = 0,
                  child: Optional[Component] = None):
         self.w = w
@@ -22,14 +23,23 @@ class Button(Component):
         self.ic = ic
         self.ac = ac
 
-        if on_click is not None:
-            self.on_click = on_click
+        if on_click_action is not None:
+            self.on_click_action = on_click_action
         else:
-            def noop(pos: MousePos, buttons: MouseButtons) -> None:
+            def noop(event: Event) -> None:
                 pass
-            self.on_click = noop
+            self.on_click_action = noop
 
         self.child = child
+
+    def type(self) -> str:
+        return 'Button'
+
+    def width(self) -> int:
+        return self.w
+
+    def height(self) -> int:
+        return self.h
 
     def draw(self, ctx: Context):
         screen = ctx.screen
@@ -43,11 +53,6 @@ class Button(Component):
             print("mouse in!")
             # Draw accented color button
             pygame.draw.rect(screen, self.ac, (x, y, self.w, self.h))
-
-            # Check for left mouse click
-            mouse_buttons = pygame.mouse.get_pressed(3)
-            if mouse_buttons[0] == 1:
-                self.on_click(mouse_pos, mouse_buttons)
         else:
             print("mouse out!")
             # Draw normal color button
@@ -57,3 +62,6 @@ class Button(Component):
         if self.child is not None:
             new_ctx = ctx.shifted(self.px, self.py)
             self.child.draw(new_ctx)
+
+    def on_click(self, event: Event) -> None:
+        self.on_click_action(event)
