@@ -1,7 +1,8 @@
 import pygame
 from pygame.color import Color
 
-from components import Window, Button
+from components import Window
+from components.button import Button
 
 
 def main():
