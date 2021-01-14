@@ -1,17 +1,15 @@
 import pygame
-from pygame.time import Clock
 from pygame.color import Color
+
+from components import Window, Button
 
 
 def main():
-    screen = pygame.display.set_mode([600, 600])
-    clock = Clock()
-
-    done = False
-    while not done:
-        screen.fill(Color('lightskyblue'))
-        pygame.display.flip()
-        clock.tick(30)
+    button = Button(50, 50, Color('gray'), Color('black'),
+                    px=0, py=0,
+                    on_click=lambda pos, buttons: print("ajwlfj"))
+    window = Window(600, 600, child=button)
+    window.render()
 
 
 if __name__ == '__main__':
