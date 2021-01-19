@@ -68,7 +68,7 @@ class Window:
     def render(self):
         pygame.init()
 
-        ctx = Container(self.screen, self.box(),
+        ctx = Container(self.screen, self.content_box(),
                         self.padding, self.overflow)
 
         exit = False
@@ -82,7 +82,10 @@ class Window:
                 if self._check_quit(event):
                     exit = True
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.on_click(event)
+                    # Pass click event to descendants if within the active box.
+                    if self.child is not None \
+                            and self.content_box().contains(event.pos):
+                        self.child.on_click(event)
 
             pygame.display.update()
             self.clock.tick(30)
@@ -95,12 +98,6 @@ class Window:
     def content_box(self) -> Box:
         return self.box().shrink(self.padding)
 
-    def on_click(self, event: Event) -> None:
-        "Pass click event to descendants if within the active box."
-        if self.child is not None:
-            x, y = event.pos
-            self.child.on_click(event)
-
     def _check_quit(self, event: Event) -> bool:
         """
         Check if window should stop rendering; returns true if X button clicked
@@ -108,4 +105,3 @@ class Window:
         """
         return event.type == pygame.QUIT or \
             (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
-        (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)

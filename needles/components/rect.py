@@ -18,6 +18,7 @@ class Rect(Component):
         self.color = color
         self.padding = padding
         self.margins = margins
+        self.overflow = overflow
         self.child = child
 
     def type(self) -> str:
@@ -28,21 +29,21 @@ class Rect(Component):
         screen = ctx.screen
         pygame.draw.rect(screen, self.color, rect_dims.as_tuple())
 
-        #  if self.child is not None:
-        #  new_ctx = ctx.shifted(self.mx + self.px, self.my + self.py)
-        #  self.child.draw(new_ctx)
+        if self.child is not None:
+            new_ctx = self.child_container(ctx)
+            self.child.draw(new_ctx)
 
     def determine_box(self, ctx: Container) -> Box:
         """
         Calculate the box for when the rectangle is actually drawn in the given
         container.
         """
+        rect_dims = None
         if self.fill_mode.is_fill():
             # Fill mode: rectangle should take up all of container content box
             # minus margins.
             rect_dims = ctx.content_box().shrink(self.margins)
-        else:
-            #  elif self.fill_mode.is_dimensions():
+        elif self.fill_mode.is_dimensions():
             # Dimensions mode: rectangle should take up specified width and
             # height
             fill_dims = self.fill_mode.inner()
@@ -73,4 +74,13 @@ class Rect(Component):
 
             rect_dims = Box(x, y, w, h)
 
+        assert rect_dims is not None
         return rect_dims
+
+    def child_container(self, ctx: Container) -> Container:
+        ctx_box = ctx.content_box()
+
+        return Container(ctx.screen,
+                         ctx_box.shrink(self.margins),
+                         padding=self.padding,
+                         overflow=self.overflow)

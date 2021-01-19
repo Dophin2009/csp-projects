@@ -45,8 +45,8 @@ class Button(Rect):
         mouse_pos = pygame.mouse.get_pos()
 
         if box.contains(mouse_pos):
-            color = self.accent_color
             # Draw accented color button
+            color = self.accent_color
         else:
             # Draw normal color button
             color = self.color
