@@ -1,5 +1,3 @@
-from pygame.color import Color
-
 from components import Window
 from components.button import Button
 from components.properties import (Dimensions, FillMode, Margins, OverflowMode,
@@ -29,6 +27,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-    main()
     main()

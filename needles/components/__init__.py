@@ -65,14 +65,15 @@ class Window:
 
         self.child = child
 
-    def render(self):
+    def render(self) -> None:
         pygame.init()
+        self.loop()
+        pygame.quit()
 
+    def loop(self) -> None:
         ctx = Container(self.screen, self.content_box(),
                         self.padding, self.overflow)
-
-        exit = False
-        while not exit:
+        while True:
             # Draw the child if it is given
             if self.child is not None:
                 self.child.draw(ctx)
@@ -80,17 +81,14 @@ class Window:
             # Handle events
             for event in pygame.event.get():
                 if self._check_quit(event):
-                    exit = True
+                    return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     # Pass click event to descendants if within the active box.
                     if self.child is not None \
                             and self.content_box().contains(event.pos):
                         self.child.on_click(event)
-
             pygame.display.update()
             self.clock.tick(30)
-
-        pygame.quit()
 
     def box(self) -> Box:
         return Box(0, 0, self.dimensions.w, self.dimensions.h)
