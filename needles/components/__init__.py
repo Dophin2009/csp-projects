@@ -11,11 +11,20 @@ from pygame.time import Clock
 from .properties import Box, Dimensions, OverflowMode, Padding
 
 
+class ComponentBoxes:
+    def __init__(self, active: Box, full: Box):
+        self.active = active
+        self.full = full
+
+
 class Container:
-    def __init__(self, screen: Surface, box: Box,
+    def __init__(self, screen: Surface,
+                 register: Register,
+                 box: Box,
                  padding=Padding.zero(),
                  overflow=OverflowMode.Ignore()):
         self.screen = screen
+        self.register = register
         self.box = box
 
         if padding is not None:
@@ -34,11 +43,15 @@ class Container:
 
 class Component(ABC):
     @abstractmethod
+    def id(self) -> str:
+        pass
+
+    @abstractmethod
     def type(self) -> str:
         pass
 
     @abstractmethod
-    def draw(self, ctx: Container):
+    def draw(self, ctx: Container) -> ComponentBoxes:
         """
         Implementations should draw the component on the given screen and at
         the given delta. The screen and modified delta should be passed to any
@@ -71,7 +84,8 @@ class Window:
         pygame.quit()
 
     def loop(self) -> None:
-        ctx = Container(self.screen, self.content_box(),
+        rg = Register()
+        ctx = Container(self.screen, rg, self.content_box(),
                         self.padding, self.overflow)
         while True:
             # Draw the child if it is given
@@ -103,3 +117,31 @@ class Window:
         """
         return event.type == pygame.QUIT or \
             (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
+        return event.type == pygame.QUIT or \
+            (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
+
+
+class Register:
+    def __init__(self):
+        self.components = {}
+        self.nested_follows = []
+        self.overflown_boxes = []
+
+    def register(self, parent_id: str, child: Component):
+        self.nested_follows.append()
+
+        # Store in components dict for quick access
+        id = component.id()
+        self.components[id] = (component, 0)
+
+    def get_id(self, id: str) -> Optional[Component]:
+        return self.components[id]
+
+
+class Node:
+    def __init__(self, children: Optional[List[Node]] = None):
+        if children is not None:
+            self.children = children
+        else:
+            self.children = []
+            self.children = []

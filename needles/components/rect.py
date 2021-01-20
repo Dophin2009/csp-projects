@@ -4,16 +4,17 @@ from typing import Optional
 
 import pygame
 
-from . import Component, Container
+from . import Component, ComponentBoxes, Container
 from .properties import (Box, ColorValue, FillMode, Margins, OverflowMode,
                          Padding)
 
 
 class Rect(Component):
-    def __init__(self, fill_mode: FillMode, color: ColorValue,
+    def __init__(self, id: str, fill_mode: FillMode, color: ColorValue,
                  padding=Padding.zero(), margins=Margins.zero(),
                  overflow=OverflowMode.Ignore(),
                  child: Optional[Component] = None):
+        self._id = id
         self.fill_mode = fill_mode
         self.color = color
         self.padding = padding
@@ -21,17 +22,25 @@ class Rect(Component):
         self.overflow = overflow
         self.child = child
 
+    def id(self) -> str:
+        return self._id
+
     def type(self) -> str:
         return 'Rect'
 
-    def draw(self, ctx: Container) -> None:
-        rect_dims = self.determine_box(ctx)
+    def draw(self, ctx: Container) -> ComponentBoxes:
+        box = self.determine_box(ctx)
         screen = ctx.screen
-        pygame.draw.rect(screen, self.color, rect_dims.as_tuple())
+        pygame.draw.rect(screen, self.color, box.as_tuple())
 
         if self.child is not None:
-            new_ctx = self.child_container(ctx)
-            self.child.draw(new_ctx)
+            new_ctx = Container(ctx.screen,
+                                ctx.register,
+                                box,
+                                padding=self.padding,
+                                overflow=self.overflow)
+            child_boxes = self.child.draw(new_ctx)
+        return ComponentBoxes(box, box.grow(self.margins))
 
     def determine_box(self, ctx: Container) -> Box:
         """
@@ -49,8 +58,9 @@ class Rect(Component):
             fill_dims = self.fill_mode.inner()
             assert fill_dims is not None
 
-            x = ctx.box.x + self.margins.left
-            y = ctx.box.y + self.margins.top
+            ctx_box = ctx.content_box()
+            x = ctx_box.x + self.margins.left
+            y = ctx_box.y + self.margins.top
             w = fill_dims.w
             w_with_margin = w + self.margins.right
             h = fill_dims.h
@@ -61,8 +71,10 @@ class Rect(Component):
                 # and height if necessary
                 fx = x + w_with_margin
                 fy = y + h_with_margin
-                ctx_box_fx = ctx.box.right_x()
-                ctx_box_fy = ctx.box.bottom_y()
+
+                ctx_box_fx = ctx_box.right_x()
+                ctx_box_fy = ctx_box.bottom_y()
+
                 if fx > ctx_box_fx:
                     w -= (ctx_box_fx - (fx))
                 if fy > ctx_box_fy:
@@ -76,11 +88,3 @@ class Rect(Component):
 
         assert rect_dims is not None
         return rect_dims
-
-    def child_container(self, ctx: Container) -> Container:
-        ctx_box = ctx.content_box()
-
-        return Container(ctx.screen,
-                         ctx_box.shrink(self.margins),
-                         padding=self.padding,
-                         overflow=self.overflow)

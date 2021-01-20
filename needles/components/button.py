@@ -5,20 +5,21 @@ from typing import Callable, Optional
 import pygame
 from pygame.event import Event
 
-from . import Component, Container
+from . import Component, ComponentBoxes, Container
 from .properties import ColorValue, FillMode, Margins, OverflowMode, Padding
 from .rect import Rect
 
 
 class Button(Rect):
-
-    def __init__(self,  fill_mode: FillMode,
+    def __init__(self, id: str,
+                 fill_mode: FillMode,
                  color: ColorValue, accent_color: Optional[ColorValue] = None,
-                 padding=Padding.zero(), margins=Margins.zero(),
+                 padding=Padding.zero(),
+                 margins=Margins.zero(),
                  overflow=OverflowMode.Ignore(),
                  child: Optional[Component] = None,
                  on_click_action: Optional[Callable[[Event], None]] = None):
-        super(Button, self).__init__(fill_mode, color,
+        super(Button, self).__init__(id, fill_mode, color,
                                      padding, margins, overflow, child)
         if accent_color is not None:
             self.accent_color = accent_color
@@ -37,7 +38,7 @@ class Button(Rect):
     def type(self) -> str:
         return 'Button'
 
-    def draw(self, ctx: Container):
+    def draw(self, ctx: Container) -> ComponentBoxes:
         box = self.determine_box(ctx)
         screen = ctx.screen
 
@@ -54,10 +55,15 @@ class Button(Rect):
         # Draw box
         pygame.draw.rect(screen, color, box.as_tuple())
 
-        # Compute new ctx and draw children
-        #  if self.child is not None:
-        #  new_ctx = ctx.shifted(self.px, self.py)
-        #  self.child.draw(new_ctx)
+        #  Compute new ctx and draw children
+        if self.child is not None:
+            new_ctx = Container(ctx.screen,
+                                ctx.register,
+                                box,
+                                padding=self.padding,
+                                overflow=self.overflow)
+            child_boxes = self.child.draw(new_ctx)
+        return ComponentBoxes(box, box.grow(self.margins))
 
     def on_click(self, event: Event) -> None:
         self.on_click_action(event)
