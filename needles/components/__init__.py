@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from queue import Queue
-from typing import Dict, Generator, List, Optional, Set
+from typing import Callable, Dict, Generator, List, Optional, Set
 
 import pygame
 from pygame.event import Event
@@ -74,7 +74,9 @@ class Window:
     def __init__(self, title: str, dimensions: Dimensions,
                  padding=Padding.zero(),
                  overflow=OverflowMode.Ignore(),
-                 child: Optional[Component] = None):
+                 child: Optional[Component] = None,
+                 tick_speed=30,
+                 before_draw: Optional[Callable[['Window'], None]] = None):
         self.dimensions = dimensions
         self.padding = padding
         self.overflow = overflow
@@ -82,8 +84,16 @@ class Window:
         self.screen = pygame.display.set_mode([600, 600])
         pygame.display.set_caption(title)
         self.clock = Clock()
+        self.tick_speed = tick_speed
 
         self.child = child
+
+        if before_draw is not None:
+            self.before_draw = before_draw
+        else:
+            def noop(_: Window) -> None:
+                pass
+            self.before_draw = noop
 
     def render(self) -> None:
         pygame.init()
@@ -95,6 +105,8 @@ class Window:
         ctx = Container(self.screen, rg, self.content_box(),
                         self.padding, self.overflow)
         while True:
+            self.before_draw(self)
+
             # Draw the child if it is given
             if self.child is not None:
                 rg.register_root(self.child)
@@ -112,7 +124,7 @@ class Window:
                         descendant_entry.component.on_click(event)
 
             pygame.display.update()
-            self.clock.tick(30)
+            self.clock.tick(self.tick_speed)
 
     def box(self) -> Box:
         return Box(0, 0, self.dimensions.w, self.dimensions.h)
