@@ -1,3 +1,4 @@
+import pygame
 from pygame.color import Color
 
 from components import Window
@@ -7,25 +8,39 @@ from components.list import Orientation as ListOrientation
 from components.properties import (Dimensions, FillMode, Margins, OverflowMode,
                                    Padding)
 from components.rect import Rect
+from components.text import Text
 
 WIDTH = 600
 HEIGHT = 600
 
 
 def window() -> Window:
+    pygame.font.init()
+    font = pygame.font.SysFont(None, 24)
+
     start = Button("start-button",
                    FillMode.Fill(),
                    "green", "green",
+                   padding=Padding.uniform(15),
                    margins=Margins(0.02 * WIDTH, 0.02 * WIDTH,
-                                   0.04 * WIDTH, 0.02 * WIDTH))
+                                   0.04 * WIDTH, 0.02 * WIDTH),
+                   child=Text('start-button-text', 'START', font,
+                              FillMode.Fill(), 'black'))
     pause = Button("pause-button",
                    FillMode.Fill(),
                    "yellow", "yellow",
-                   margins=Margins.uniform(0.02 * WIDTH))
+                   padding=Padding.uniform(15),
+                   margins=Margins.uniform(0.02 * WIDTH),
+                   child=Text('pause-button-text', 'PAUSE', font,
+                              FillMode.Fill(), 'black'))
     clear = Button("clear-button",
                    FillMode.Fill(),
                    "red", "red",
-                   margins=Margins.uniform(0.02 * WIDTH))
+                   padding=Padding.uniform(15),
+                   margins=Margins.uniform(0.02 * WIDTH),
+                   child=Text('clear-button-text', 'CLEAR', font,
+                              FillMode.Fill(), 'black'))
+
     buttons = List("buttons", ListOrientation.HORIZONTAL,
                    FillMode.Fill(), padding=Padding.uniform(10),
                    overflow=OverflowMode.Ignore(),
