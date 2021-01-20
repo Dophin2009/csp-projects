@@ -1,6 +1,8 @@
 """
 Truly awful try at something of a UI toolkit with horrible user ergonomics and
 probably terrible performance.
+
+Update: The ergonomics of this are so awful, I regret this.
 """
 from __future__ import annotations
 
