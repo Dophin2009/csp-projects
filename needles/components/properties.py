@@ -47,6 +47,10 @@ class Box:
         return self.right_x() > p[0] > self.x \
             and self.bottom_y() > p[1] > self.y
 
+    def encapsulates(self, other: Box) -> bool:
+        return self.x < other.x and self.right_x() > other.right_x() \
+            and self.y < other.y and self.bottom_y() > other.bottom_y()
+
     def as_tuple(self) -> Tuple[int, int, int, int]:
         return (self.x, self.y, self.w, self.h)
 
@@ -59,6 +63,9 @@ class Box:
         w = self.w + s.left + s.right
         h = self.h + s.top + s.bottom
         return Box(self.x - s.left, self.y - s.top, w, h)
+
+    def __repr__(self) -> str:
+        return f'Box({self.x}, {self.y}, {self.w}, {self.h})'
 
 
 class Sides:

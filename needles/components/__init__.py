@@ -1,14 +1,19 @@
+"""
+Truly awful try at something of a UI toolkit with horrible user ergonomics and
+probably terrible performance.
+"""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from queue import Queue
+from typing import Dict, Generator, List, Optional, Set
 
 import pygame
 from pygame.event import Event
 from pygame.surface import Surface
 from pygame.time import Clock
 
-from .properties import Box, Dimensions, OverflowMode, Padding
+from .properties import Box, Dimensions, OverflowMode, Padding, Point
 
 
 class ComponentBoxes:
@@ -19,12 +24,12 @@ class ComponentBoxes:
 
 class Container:
     def __init__(self, screen: Surface,
-                 register: Register,
+                 rg: Register,
                  box: Box,
                  padding=Padding.zero(),
                  overflow=OverflowMode.Ignore()):
         self.screen = screen
-        self.register = register
+        self.rg = rg
         self.box = box
 
         if padding is not None:
@@ -90,7 +95,10 @@ class Window:
         while True:
             # Draw the child if it is given
             if self.child is not None:
-                self.child.draw(ctx)
+                rg.register_root(self.child)
+                child_boxes = self.child.draw(ctx)
+
+                rg.set_box(self.child.id(), child_boxes, False)
 
             # Handle events
             for event in pygame.event.get():
@@ -98,9 +106,9 @@ class Window:
                     return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     # Pass click event to descendants if within the active box.
-                    if self.child is not None \
-                            and self.content_box().contains(event.pos):
-                        self.child.on_click(event)
+                    for descendant_entry in rg.yield_for(event.pos):
+                        descendant_entry.component.on_click(event)
+
             pygame.display.update()
             self.clock.tick(30)
 
@@ -123,25 +131,101 @@ class Window:
 
 class Register:
     def __init__(self):
-        self.components = {}
-        self.nested_follows = []
-        self.overflown_boxes = []
+        # Quick-access dictionary of components and their index in
+        # nested_follows
+        self.components: Dict[str, RegisterEntry] = {}
 
-    def register(self, parent_id: str, child: Component):
-        self.nested_follows.append()
+        # List where each element contains the indexes of that element's
+        # children
+        self.nested_follows: List[Set[FollowEntry]] = []
 
-        # Store in components dict for quick access
-        id = component.id()
-        self.components[id] = (component, 0)
+        self.overflows: List[str] = []
 
-    def get_id(self, id: str) -> Optional[Component]:
+        self.root = None
+
+    def yield_for(self, p: Point) -> Generator[RegisterEntry, None, None]:
+        if self.root is not None:
+            root_id = self.root
+            root = self.components[root_id]
+            if root.boxes.active.contains(p):
+                yield root
+
+            queue = Queue()
+            queue.put(root.idx)
+
+            # Breadth-first traversal
+            while not queue.empty():
+                current_idx = queue.get()
+
+                # Yield child component entries
+                for child_follow_entry in self.nested_follows[current_idx]:
+                    child = self.components[child_follow_entry.id]
+
+                    # Only yield if the point is within the active box of the
+                    # component.
+                    if child.boxes.active.contains(p):
+                        yield child
+                        queue.put(child.idx)
+
+            # Yield overflow boxes
+            for child_id in self.overflows:
+                child = self.components[child_id]
+                if child.boxes.active.contains(p):
+                    yield child
+
+    def set_box(self, id: str, boxes: ComponentBoxes, overflow: bool):
+        self.components[id].boxes = boxes
+        if overflow:
+            self.overflows.append(id)
+
+    def register_child(self, parent: Component, child: Component,
+                       pass_events: bool):
+        id = child.id()
+        if id in self.components:
+            return
+
+        child_idx = self._insert_component(child, pass_events)
+
+        # Find parent idx in nested_follows
+        parent_entry = self.components[parent.id()]
+
+        # Push child index to list for parent
+        self.nested_follows[parent_entry.idx].add(
+            FollowEntry(child_idx, child.id()))
+
+    def register_root(self, child: Component):
+        id = child.id()
+        if id in self.components:
+            return
+
+        self._insert_component(child, True)
+        self.root = child.id()
+
+    def _insert_component(self, child: Component, pass_events: bool) -> int:
+        id = child.id()
+
+        # Push empty list to nested_follows for children of child
+        self.nested_follows.append(set())
+        child_idx = len(self.nested_follows) - 1
+
+        # Store in components for quick access by id
+        self.components[id] = RegisterEntry(child, child_idx, pass_events)
+
+        return child_idx
+
+    def get_id(self, id: str) -> Optional[RegisterEntry]:
         return self.components[id]
 
 
-class Node:
-    def __init__(self, children: Optional[List[Node]] = None):
-        if children is not None:
-            self.children = children
-        else:
-            self.children = []
-            self.children = []
+class RegisterEntry:
+    def __init__(self, component: Component, idx: int, pass_events: bool):
+        self.component = component
+        self.idx = idx
+        self.boxes: Optional[ComponentBoxes] = None
+        self.pass_events = pass_events
+
+
+class FollowEntry:
+    def __init__(self, idx: int, id: str):
+        self.idx = idx
+        self.id = id

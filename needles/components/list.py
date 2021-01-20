@@ -4,6 +4,8 @@ import typing
 from enum import Enum, auto
 from typing import Tuple
 
+from pygame.event import Event
+
 from . import Component, ComponentBoxes, Container
 from .properties import Box, FillMode, Margins, OverflowMode, Padding
 from .rect import Rect
@@ -120,15 +122,17 @@ class List(Rect):
 
             assert new_box is not None
 
-            #  print(i, new_box.x, new_box.y, new_box.w, new_box.h)
+            ctx.rg.register_child(self, child, True)
+
             box = new_box
-            new_ctx = Container(ctx.screen, ctx.register, new_box,
+            new_ctx = Container(ctx.screen, ctx.rg, new_box,
                                 padding=new_padding,
                                 overflow=self.overflow)
 
             child_boxes = child.draw(new_ctx)
             child_full_box = child_boxes.full
-            print(i, child_full_box.x, child_full_box.y,
-                  child_full_box.w, child_full_box.h)
+
+            ctx.rg.set_box(child.id(), child_boxes,
+                           not bounds.encapsulates(child_boxes.active))
 
         return ComponentBoxes(bounds, bounds.grow(self.margins))

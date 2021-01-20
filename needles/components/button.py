@@ -57,12 +57,18 @@ class Button(Rect):
 
         #  Compute new ctx and draw children
         if self.child is not None:
+            ctx.rg.register_child(self, self.child, True)
+
             new_ctx = Container(ctx.screen,
-                                ctx.register,
+                                ctx.rg,
                                 box,
                                 padding=self.padding,
                                 overflow=self.overflow)
             child_boxes = self.child.draw(new_ctx)
+
+            ctx.rg.set_box(self.child.id(), child_boxes,
+                           not box.encapsulates(child_boxes.active))
+
         return ComponentBoxes(box, box.grow(self.margins))
 
     def on_click(self, event: Event) -> None:

@@ -34,12 +34,20 @@ class Rect(Component):
         pygame.draw.rect(screen, self.color, box.as_tuple())
 
         if self.child is not None:
+            # Register child component
+            ctx.rg.register_child(self, self.child, True)
+
             new_ctx = Container(ctx.screen,
-                                ctx.register,
+                                ctx.rg,
                                 box,
                                 padding=self.padding,
                                 overflow=self.overflow)
             child_boxes = self.child.draw(new_ctx)
+
+            # Save bounding boxes
+            ctx.rg.set_box(self.child.id(), child_boxes,
+                           not box.encapsulates(child_boxes.active))
+
         return ComponentBoxes(box, box.grow(self.margins))
 
     def determine_box(self, ctx: Container) -> Box:
