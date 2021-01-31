@@ -12,7 +12,7 @@ from components.properties import (Dimensions, FillMode, Margins, OverflowMode,
 from components.rect import Rect
 from components.text import Text
 
-WIDTH = 600
+WIDTH = 800
 HEIGHT = 600
 
 
@@ -21,7 +21,7 @@ class Control:
         self.tossing = False
         self.state = State(w, h, r)
 
-    def before_draw(self, window: Window) -> None:
+    def before_draw(self, _: Window) -> None:
         if self.tossing:
             self.state.toss()
 
@@ -72,8 +72,6 @@ def window() -> Window:
                    FillMode.Fill(),
                    "green", "green",
                    padding=Padding.uniform(15),
-                   margins=Margins(0.02 * WIDTH, 0.02 * WIDTH,
-                                   0.04 * WIDTH, 0.02 * WIDTH),
                    child=Text('start-button-text', 'START', font,
                               FillMode.Fill(), 'black'),
                    on_click_action=lambda _: control.start())
@@ -81,7 +79,6 @@ def window() -> Window:
                    FillMode.Fill(),
                    "yellow", "yellow",
                    padding=Padding.uniform(15),
-                   margins=Margins.uniform(0.02 * WIDTH),
                    child=Text('pause-button-text', 'PAUSE', font,
                               FillMode.Fill(), 'black'),
                    on_click_action=lambda _: control.pause())
@@ -89,36 +86,33 @@ def window() -> Window:
                    FillMode.Fill(),
                    "red", "red",
                    padding=Padding.uniform(15),
-                   margins=Margins.uniform(0.02 * WIDTH),
                    child=Text('clear-button-text', 'CLEAR', font,
                               FillMode.Fill(), 'black'),
                    on_click_action=lambda _: control.clear())
 
     buttons = List("buttons", ListOrientation.HORIZONTAL,
-                   FillMode.Fill(), padding=Padding.uniform(10),
+                   FillMode.Fill(),
                    overflow=OverflowMode.Ignore(),
-                   children=[(start, 0.22 * WIDTH),
-                             (pause, 0.19 * WIDTH),
-                             (clear, 0.2 * WIDTH)])
+                   margins=Margins.uniform(0.01),
+                   children=[(start, 0.235 * WIDTH),
+                             (pause, 0.235 * WIDTH),
+                             (clear, 0.235 * WIDTH)])
 
     floorboard = Floorboards('floorboards', control.state.tosses)
 
     left_panel = List("left", ListOrientation.VERTICAL,
                       FillMode.Fill(),
-                      children=[(floorboard, 0.7 * HEIGHT),
+                      children=[(floorboard, 0.8 * HEIGHT),
                                 (buttons, 0.2 * HEIGHT)])
 
     info_panel = Rect("info", FillMode.Fill(), "lightgrey",
-                      padding=Padding.uniform(0.05 * WIDTH),
-                      margins=Margins(0.075 * WIDTH, 0, 0, 0),
                       overflow=OverflowMode.Restrict())
 
     wrapper = List("wrapper", ListOrientation.HORIZONTAL,
                    FillMode.Fill(),
-                   padding=Padding.uniform(0.05 * WIDTH),
                    overflow=OverflowMode.Restrict(),
-                   children=[(left_panel, 0.65 * WIDTH),
-                             (info_panel, 0.35 * WIDTH)])
+                   children=[(left_panel, 0.7 * WIDTH),
+                             (info_panel, 0.3 * WIDTH)])
 
     w = Window('Needle Simulation', Dimensions(WIDTH, HEIGHT),
                tick_speed=5,

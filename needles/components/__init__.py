@@ -81,7 +81,8 @@ class Window:
         self.padding = padding
         self.overflow = overflow
 
-        self.screen = pygame.display.set_mode([600, 600])
+        self.screen = pygame.display.set_mode([self.dimensions.w,
+                                               self.dimensions.h])
         pygame.display.set_caption(title)
         self.clock = Clock()
         self.tick_speed = tick_speed
@@ -137,8 +138,6 @@ class Window:
         Check if window should stop rendering; returns true if X button clicked
         or <esc> key is pressed.
         """
-        return event.type == pygame.QUIT or \
-            (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
         return event.type == pygame.QUIT or \
             (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
 
