@@ -1,16 +1,19 @@
 import typing
 
 import pygame
-from state import State, Toss
+from pygame.font import Font
+
+import math
 
 from components import Component, ComponentBoxes, Container, Window
 from components.button import Button
 from components.list import List
 from components.list import Orientation as ListOrientation
 from components.properties import (Dimensions, FillMode, Margins, OverflowMode,
-                                   Padding)
+                                   Padding, ColorValue)
 from components.rect import Rect
 from components.text import Text
+from state import State, Toss
 
 WIDTH = 800
 HEIGHT = 600
@@ -61,19 +64,113 @@ class Floorboards(Component):
 
         dx, dy = boxes.active.x, boxes.active.y
         y_bottom = boxes.active.bottom_y()
+
+        def draw_toss(toss: Toss, color: ColorValue):
+            pygame.draw.line(ctx.screen, color,
+                             (toss[0][0] + dx, toss[0][1] + dy),
+                             (toss[1][0] + dx, toss[1][1] + dy))
+
         for x in self.lines:
             pygame.draw.line(ctx.screen, 'black',
                              (x + dx, dy), (x + dx, y_bottom))
 
         for toss in self.cross:
-            pygame.draw.line(ctx.screen, 'blue',
-                             (toss[0][0] + dx, toss[0][1] + dy),
-                             (toss[1][0] + dx, toss[1][1] + dy))
+            draw_toss(toss, 'blue')
 
         for toss in self.no_cross:
-            pygame.draw.line(ctx.screen, 'black',
-                             (toss[0][0] + dx, toss[0][1] + dy),
-                             (toss[1][0] + dx, toss[1][1] + dy))
+            draw_toss(toss, 'black')
+
+        return boxes
+
+
+class InfoPanel(Component):
+    def __init__(self, id: str, state: State, font: Font):
+        self._id = id
+        self.state = state
+        self.font = font
+
+        self.rect = Rect("info", FillMode.Fill(), "lightgrey",
+                         overflow=OverflowMode.Restrict())
+
+    def id(self) -> str:
+        return self._id
+
+    def type(self) -> str:
+        return 'InfoPanel'
+
+    def draw(self, ctx: Container) -> ComponentBoxes:
+        boxes = self.rect.draw(ctx)
+
+        num_toss = self.state.num_tosses()
+        num_cross = self.state.num_cross()
+
+        if num_toss != 0:
+            percent_cross = '{:.4f}'.format(num_cross / num_toss * 100)
+        else:
+            percent_cross = '--'
+        theoretical_percent_cross = 2 * self.state.r / \
+            (self.state.g * math.pi) * 100
+
+        pi_estimate = self.state.pi_estimate()
+        if pi_estimate is None:
+            pi_estimate = '--'
+        else:
+            pi_estimate = '{:.4f}'.format(pi_estimate)
+
+        new_ctx = Container(ctx.screen, ctx.rg, boxes.active,
+                            padding=Padding.uniform(10))
+
+        num_toss_text = Text("num-toss-text",
+                             "Tosses: {}".format(num_toss), self.font,
+                             fill_mode=FillMode.Fill(), color='black')
+        num_cross_text = Text("num-cross-text",
+                              "Crosses: {}".format(num_cross), self.font,
+                              fill_mode=FillMode.Fill(),
+                              margins=Margins(0, 0, 0, 10),
+                              color='black')
+        percent_cross_text = Text("percent-cross-text",
+                                  "% Crosses: {}".format(percent_cross),
+                                  self.font,
+                                  fill_mode=FillMode.Fill(), color='black')
+        theoretical_cross_text = Text("theoretical-cross-text",
+                                      "Theoretical %: {:.4f}".format(
+                                          theoretical_percent_cross),
+                                      self.font,
+                                      margins=Margins(0, 0, 0, 10),
+                                      fill_mode=FillMode.Fill(), color='black')
+
+        pi_estimate_text = Text("pi-estimate-text",
+                                "π estimation: {}".format(pi_estimate),
+                                self.font,
+                                fill_mode=FillMode.Fill(), color='black')
+        pi_actual_text = Text("pi-actual-text",
+                              "π: {:.4f}".format(math.pi),
+                              self.font,
+                              fill_mode=FillMode.Fill(),
+                              color='black')
+
+        description_text = Text("description-text",
+                                "Press START to start drop",
+                                self.font,
+                                fill_mode=FillMode.Fill(),
+                                margins=Margins(0, 0, 0, 20),
+                                color='black')
+
+        stats_list = List("stat-text-list", ListOrientation.VERTICAL,
+                          FillMode.Fill(),
+                          children=[
+                              (description_text, 40),
+                              (num_toss_text, 20),
+                              (num_cross_text, 30),
+                              (percent_cross_text, 20),
+                              (theoretical_cross_text, 30),
+                              (pi_estimate_text, 20),
+                              (pi_actual_text, 20)
+                          ])
+
+        ctx.rg.register_child(self, stats_list, True)
+        list_boxes = stats_list.draw(new_ctx)
+        ctx.rg.set_box(stats_list.id(), list_boxes, False)
 
         return boxes
 
@@ -83,7 +180,7 @@ def window() -> Window:
     font = pygame.font.SysFont(None, 24)
 
     r = int(BOARD_WIDTH / 6)
-    control = Control(BOARD_WIDTH, BOARD_HEIGHT, r, r)
+    control = Control(BOARD_WIDTH, BOARD_HEIGHT, 6, r)
 
     start = Button("start-button",
                    FillMode.Fill(),
@@ -123,8 +220,7 @@ def window() -> Window:
                       children=[(floorboard, BOARD_HEIGHT),
                                 (buttons, HEIGHT - BOARD_HEIGHT)])
 
-    info_panel = Rect("info", FillMode.Fill(), "lightgrey",
-                      overflow=OverflowMode.Restrict())
+    info_panel = InfoPanel("info", control.state, font)
 
     wrapper = List("wrapper", ListOrientation.HORIZONTAL,
                    FillMode.Fill(),
@@ -133,7 +229,7 @@ def window() -> Window:
                              (info_panel, WIDTH - BOARD_WIDTH)])
 
     w = Window('Needle Simulation', Dimensions(WIDTH, HEIGHT),
-               tick_speed=20,
+               tick_speed=4096,
                child=wrapper,
                before_draw=lambda w: control.before_draw(w))
     return w

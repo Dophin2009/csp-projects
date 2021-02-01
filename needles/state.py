@@ -2,21 +2,23 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 Toss = Tuple[Tuple[int, int], Tuple[int, int]]
 
 
 class State:
-    def __init__(self, w: int, h: int, g: int, r: int):
+    def __init__(self, w: int, h: int, n: int, r: int):
         self.w = w
         self.h = h
-        self.g = g
+        self.g = w / n
 
         self.r = r
 
         self.cross = []
         self.no_cross = []
+
+        self.lines = [i * int(self.g) for i in range(1, n)]
 
     def toss(self) -> Toss:
         x1, y1, x2, y2 = -1, -1, -1, -1
@@ -39,8 +41,12 @@ class State:
 
         return t
 
-    def pi_estimate(self) -> float:
-        return (2 * self.r * self.num_tosses()) / (self.g * self.num_cross())
+    def pi_estimate(self) -> Optional[float]:
+        num_cross = self.num_cross()
+        if num_cross != 0:
+            return (2 * self.r * self.num_tosses()) / (self.g * num_cross)
+        else:
+            return None
 
     def num_tosses(self) -> int:
         return self.num_cross() + len(self.no_cross)
@@ -49,7 +55,7 @@ class State:
         return len(self.cross)
 
     def cross_lines(self) -> List[int]:
-        return [i for i in range(self.g, self.w + 1, self.g)]
+        return self.lines
 
     def clear(self) -> None:
         self.cross.clear()
