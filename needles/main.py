@@ -1,16 +1,15 @@
+import math
 import typing
 
 import pygame
 from pygame.font import Font
 
-import math
-
 from components import Component, ComponentBoxes, Container, Window
 from components.button import Button
 from components.list import List
 from components.list import Orientation as ListOrientation
-from components.properties import (Dimensions, FillMode, Margins, OverflowMode,
-                                   Padding, ColorValue)
+from components.properties import (ColorValue, Dimensions, FillMode, Margins,
+                                   OverflowMode, Padding)
 from components.rect import Rect
 from components.text import Text
 from state import State, Toss
@@ -229,7 +228,7 @@ def window() -> Window:
                              (info_panel, WIDTH - BOARD_WIDTH)])
 
     w = Window('Needle Simulation', Dimensions(WIDTH, HEIGHT),
-               tick_speed=4096,
+               tick_speed=100000,
                child=wrapper,
                before_draw=lambda w: control.before_draw(w))
     return w
