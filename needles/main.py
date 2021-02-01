@@ -15,11 +15,14 @@ from components.text import Text
 WIDTH = 800
 HEIGHT = 600
 
+BOARD_WIDTH = int(0.7 * WIDTH)
+BOARD_HEIGHT = int(0.8 * HEIGHT)
+
 
 class Control:
-    def __init__(self, w: int, h: int, r: int):
+    def __init__(self, w: int, h: int, g: int, r: int):
         self.tossing = False
-        self.state = State(w, h, r)
+        self.state = State(w, h, g, r)
 
     def before_draw(self, _: Window) -> None:
         if self.tossing:
@@ -37,9 +40,12 @@ class Control:
 
 
 class Floorboards(Component):
-    def __init__(self, id: str, tosses: typing.List[Toss]):
+    def __init__(self, id: str, lines: typing.List[int],
+                 cross: typing.List[Toss], no_cross: typing.List[Toss]):
         self._id = id
-        self.tosses = tosses
+        self.lines = lines
+        self.cross = cross
+        self.no_cross = no_cross
 
         self.rect = Rect("floorboard", FillMode.Fill(),
                          "brown", padding=Padding.uniform(10))
@@ -53,8 +59,18 @@ class Floorboards(Component):
     def draw(self, ctx: Container) -> ComponentBoxes:
         boxes = self.rect.draw(ctx)
 
-        for toss in self.tosses:
-            dx, dy = boxes.active.x, boxes.active.y
+        dx, dy = boxes.active.x, boxes.active.y
+        y_bottom = boxes.active.bottom_y()
+        for x in self.lines:
+            pygame.draw.line(ctx.screen, 'black',
+                             (x + dx, dy), (x + dx, y_bottom))
+
+        for toss in self.cross:
+            pygame.draw.line(ctx.screen, 'blue',
+                             (toss[0][0] + dx, toss[0][1] + dy),
+                             (toss[1][0] + dx, toss[1][1] + dy))
+
+        for toss in self.no_cross:
             pygame.draw.line(ctx.screen, 'black',
                              (toss[0][0] + dx, toss[0][1] + dy),
                              (toss[1][0] + dx, toss[1][1] + dy))
@@ -66,7 +82,8 @@ def window() -> Window:
     pygame.font.init()
     font = pygame.font.SysFont(None, 24)
 
-    control = Control(300, 400, 50)
+    r = int(BOARD_WIDTH / 6)
+    control = Control(BOARD_WIDTH, BOARD_HEIGHT, r, r)
 
     start = Button("start-button",
                    FillMode.Fill(),
@@ -94,16 +111,17 @@ def window() -> Window:
                    FillMode.Fill(),
                    overflow=OverflowMode.Ignore(),
                    margins=Margins.uniform(0.01),
-                   children=[(start, 0.235 * WIDTH),
-                             (pause, 0.235 * WIDTH),
-                             (clear, 0.235 * WIDTH)])
+                   children=[(start, int(BOARD_WIDTH / 3)),
+                             (pause, int(BOARD_WIDTH / 3)),
+                             (clear, int(BOARD_WIDTH / 3))])
 
-    floorboard = Floorboards('floorboards', control.state.tosses)
+    floorboard = Floorboards('floorboards', control.state.cross_lines(),
+                             control.state.cross, control.state.no_cross)
 
     left_panel = List("left", ListOrientation.VERTICAL,
                       FillMode.Fill(),
-                      children=[(floorboard, 0.8 * HEIGHT),
-                                (buttons, 0.2 * HEIGHT)])
+                      children=[(floorboard, BOARD_HEIGHT),
+                                (buttons, HEIGHT - BOARD_HEIGHT)])
 
     info_panel = Rect("info", FillMode.Fill(), "lightgrey",
                       overflow=OverflowMode.Restrict())
@@ -111,12 +129,13 @@ def window() -> Window:
     wrapper = List("wrapper", ListOrientation.HORIZONTAL,
                    FillMode.Fill(),
                    overflow=OverflowMode.Restrict(),
-                   children=[(left_panel, 0.7 * WIDTH),
-                             (info_panel, 0.3 * WIDTH)])
+                   children=[(left_panel, BOARD_WIDTH),
+                             (info_panel, WIDTH - BOARD_WIDTH)])
 
     w = Window('Needle Simulation', Dimensions(WIDTH, HEIGHT),
-               tick_speed=5,
-               child=wrapper, before_draw=lambda w: control.before_draw(w))
+               tick_speed=20,
+               child=wrapper,
+               before_draw=lambda w: control.before_draw(w))
     return w
 
 
