@@ -74,11 +74,21 @@ class Game:
 class Cell:
 
     def __init__(self, alive: bool):
+        self._age = 0
         self._alive = alive
         self._next_alive = alive
 
     def tick(self):
+        if self._alive:
+            if self._next_alive:
+                self._age += 1
+            else:
+                self._age = 0
+
         self._alive = self._next_alive
+
+    def age(self):
+        return self._age
 
     def is_alive(self) -> bool:
         return self._alive

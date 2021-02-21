@@ -1,3 +1,4 @@
+import math
 
 import pygame
 from pygame import Surface
@@ -47,7 +48,7 @@ def main():
             game.update()
 
         pygame.display.flip()
-        clock.tick(10)
+        clock.tick(5)
 
     pygame.quit()
 
@@ -55,7 +56,8 @@ def main():
 def draw_cell(screen: Surface, game: Game, r: int, c: int):
     cell = game.cell_at(r, c)
     if cell.is_alive():
-        color = (0, 0, 0)
+        v = max(50, 200 - int(255 * math.pow(0.5, cell.age())))
+        color = (v, v, v)
     else:
         color = (255, 255, 255)
 
