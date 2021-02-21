@@ -1,5 +1,3 @@
-import random
-from typing import Iterator, Tuple
 
 import pygame
 from pygame import Surface
@@ -12,15 +10,14 @@ HEIGHT = 600
 
 ROWS = 30
 COLS = 30
+STARTING = 300
 
 RECT_W = int(WIDTH / ROWS)
 RECT_H = int(HEIGHT / COLS)
 
 
 def main():
-    game = Game(ROWS, COLS)
-    for r, c in generate_random_coords(300):
-        game.board[r][c].set_alive()
+    game = Game(ROWS, COLS, STARTING)
 
     pygame.init()
 
@@ -28,22 +25,29 @@ def main():
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
     clock = Clock()
 
-    running = True
-    while running:
+    looping = True
+    updating = True
+    while looping:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or \
-                (event.type == pygame.KEYDOWN
-                 and event.key == pygame.K_ESCAPE):
-                running = False
+            if event.type == pygame.QUIT:
+                looping = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    looping = False
+                elif event.key == pygame.K_p:
+                    updating = not updating
+                elif event.key == pygame.K_r:
+                    game.reset()
+                    updating = True
 
-        for r, _ in enumerate(game.board):
-            for c, _ in enumerate(game.board[r]):
-                draw_cell(screen, game, r, c)
+        if updating:
+            for r, _ in enumerate(game.board):
+                for c, _ in enumerate(game.board[r]):
+                    draw_cell(screen, game, r, c)
+            game.update()
 
         pygame.display.flip()
         clock.tick(10)
-
-        game.update()
 
     pygame.quit()
 
@@ -57,11 +61,6 @@ def draw_cell(screen: Surface, game: Game, r: int, c: int):
 
     pygame.draw.rect(screen, color,
                      (r * RECT_W, c * RECT_H, RECT_W, RECT_H))
-
-
-def generate_random_coords(n: int) -> Iterator[Tuple[int, int]]:
-    return ((random.randint(0, ROWS - 1), random.randint(0, COLS - 1))
-            for _ in range(n))
 
 
 if __name__ == '__main__':

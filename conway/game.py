@@ -1,12 +1,26 @@
 from __future__ import annotations
 
-from typing import Iterator
+import random
+from typing import Iterator, Tuple
 
 
 class Game:
 
-    def __init__(self, rows: int, cols: int):
+    def __init__(self, rows: int, cols: int, n: int):
         self.board = [[Cell(False) for _ in range(cols)] for _ in range(rows)]
+        self._starting = [(random.randint(0, rows - 1),
+                           random.randint(0, cols - 1))
+                          for _ in range(n)]
+        for r, c in self._starting:
+            self.board[r][c].set_alive()
+
+    def reset(self):
+        for r, _ in enumerate(self.board):
+            for c, _ in enumerate(self.board[r]):
+                self.board[r][c].set_dead()
+
+        for r, c in self._starting:
+            self.board[r][c].set_alive()
 
     def update(self):
         for r, _ in enumerate(self.board):
