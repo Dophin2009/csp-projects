@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from typing import Iterator, Tuple
+from typing import Iterator
 
 
 class Game:
