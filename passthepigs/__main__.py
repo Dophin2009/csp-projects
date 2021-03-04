@@ -1,11 +1,12 @@
-from typing import List
+import os
+from typing import Dict, List
 
 import pygame
 from pygame import Surface
 from pygame.time import Clock
 
 from simulation import (Pig, Player, PlayerState, Simulation, SimulationState,
-                        Simulator, TossResult)
+                        Simulator, TossData, TossResult)
 from simulation.ai import RandomPlayer, ThresholdPlayer
 
 
@@ -41,14 +42,33 @@ class Display:
 
             def __init__(self):
                 pygame.display.set_caption('Pass the Pigs')
-                self.screen = pygame.display.set_mode(
+                self._screen = pygame.display.set_mode(
                     [self.WIDTH, self.HEIGHT])
-                self.clock = Clock()
+                self._clock = Clock()
+
+                self._sprite_loader = PigSpriteLoader('sprites')
 
             def update(self, state: SimulationState):
+                self._screen.fill('white')
+                self.__draw_pigs(state.toss)
 
                 pygame.display.flip()
-                self.clock.tick(5)
+                self._clock.tick(5)
+
+            def __draw_pigs(self, toss: TossData):
+                t1 = toss.t1
+                t2 = toss.t2
+
+                s1 = self._sprite_loader.load_sprite(t1)
+                s2 = self._sprite_loader.load_sprite(t2)
+                self.__blit(s1, 0, 0)
+                self.__blit(s2, 200, 200)
+
+            def __blit(self, image: Surface, top: int, left: int):
+                rect = image.get_rect()
+                rect.top = top
+                rect.left = left
+                self._screen.blit(image, rect)
 
         pygame.init()
         return DisplayInner()
@@ -70,16 +90,26 @@ class PigSpriteLoader:
     def __init__(self, sprite_dir: str):
         self._sprite_dir = sprite_dir
 
+        self._cache: Dict[TossResult, Surface] = {}
+
     def load_sprite(self, t: TossResult) -> Surface:
+        if t in self._cache.keys():
+            return self._cache[t]
+
         name = self.get_sprite_name(t)
         path = self.resolve_image_path(name)
-        return pygame.image.load(path)
+
+        sprite = pygame.image.load(path)
+        sprite.convert()
+
+        self._cache[t] = sprite
+        return sprite
 
     def get_sprite_name(self, t: TossResult) -> str:
         return self._MAP[t]
 
     def resolve_image_path(self, name: str) -> str:
-        return '{}/{}.png'.format(self._sprite_dir, name)
+        return os.path.join(self._sprite_dir, '{}.png'.format(name))
 
 
 def main():
