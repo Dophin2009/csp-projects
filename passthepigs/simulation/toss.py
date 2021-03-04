@@ -43,8 +43,9 @@ class Tosser:
         pass
 
     def toss(self, pig: Pig) -> TossResult:
-        sample_idx = self.__sample([r for r in pig.rates])
-        return pig.rates[sample_idx]
+        rates = [(rate, result) for rate, result in pig.rates.items()]
+        sample_idx = self.__sample([r for r, _ in rates])
+        return [res for _, res in rates][sample_idx]
 
     def __sample(self, probabilities: List[float]) -> int:
         totals = list(itertools.accumulate(probabilities))
