@@ -3,48 +3,7 @@ from __future__ import annotations
 import enum
 import itertools
 import random
-from typing import Dict, Generator, List, Optional
-
-
-class Player:
-
-
-class Simulation:
-    def __init__(self, players: List[Player], p1: Pig, p2: Pig):
-        self._tosser = Tosser()
-        self._scorer = TossScorer()
-        self._scores = [0] * players
-        self._current_player = 0
-        self._p1 = p1
-        self._p2 = p2
-
-    def simulate(self) -> Generator[None, None, None]:
-        while True:
-
-        yield None
-
-    def toss(self):
-        toss1 = self._tosser.toss(self._p1)
-        toss2 = self._tosser.toss(self._p2)
-
-        toss_score = self._scorer.get_toss_score(toss1, toss2)
-        if toss_score is None:
-            new_score = 0
-        else:
-            new_score = self._scores[self._current_player] + toss_score
-        self._scores[self._current_player] = new_score
-
-    def next_player(self) -> int:
-        self._current_player += 1
-        if self._current_player >= len(self._scores):
-            self._current_player = 0
-        return self._current_player
-
-    def scores(self) -> List[int]:
-        return self._scores
-
-    def current_player(self) -> int:
-        return self._current_player
+from typing import Dict, List, Optional
 
 
 class TossScorer:
@@ -52,7 +11,7 @@ class TossScorer:
         self.checker = TossChecker()
         pass
 
-    def get_toss_score(self, t1: TossResult, t2: TossResult) -> Optional[int]:
+    def score_pair(self, t1: TossResult, t2: TossResult) -> Optional[int]:
         if self.checker.is_sider(t1, t2):
             return 1
         elif self.checker.is_double_razorback(t1, t2):
@@ -65,6 +24,18 @@ class TossScorer:
             return 60
         elif self.checker.is_pig_out(t1, t2):
             return None
+        else:
+            return self.score_one(t1) + self.score_one(t2)
+
+    def score_one(self, t: TossResult) -> int:
+        return {
+            TossResult.SIDE_DOT: 0,
+            TossResult.SIDE_NO_DOT: 0,
+            TossResult.RAZORBACK: 5,
+            TossResult.TROTTER: 5,
+            TossResult.SNOUTER: 10,
+            TossResult.LEANING_JOWLER: 15,
+        }[t]
 
 
 class Tosser:
