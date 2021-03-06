@@ -72,6 +72,11 @@ class TurnState:
     def clear(self):
         self._score = 0
 
+    def clone(self) -> TurnState:
+        new = TurnState()
+        new._score = self.score()
+        return new
+
 
 class Simulator:
     def __init__(self, players: List[Player], p1: Pig, p2: Pig):
@@ -84,9 +89,10 @@ class Simulator:
 
 
 class SimulationState:
-    def __init__(self, toss: TossData, current_player: int,
+    def __init__(self, toss: TossData, turn: TurnState, current_player: int,
                  player_states: List[PlayerState]):
         self.toss = toss
+        self.turn = turn
         self.current_player = current_player
         self.player_states = player_states
 
@@ -128,7 +134,8 @@ class Simulation:
                 self.next_player()
                 turn_state.clear()
 
-            yield SimulationState(toss_data, self._current_player,
+            yield SimulationState(toss_data, turn_state.clone(),
+                                  self._current_player,
                                   self.cloned_player_states())
 
     def toss(self, turn_state: TurnState) -> TossData:
