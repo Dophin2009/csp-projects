@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import pygame
 from pygame import Surface
@@ -52,12 +52,17 @@ class Display:
 
                 self._sprite_loader = PigSpriteLoader('sprites')
 
-                self._score_font = pygame.font.SysFont(None, 48)
-                self._name_font = pygame.font.SysFont(None, 24)
+                top_width = self.WIDTH - 2 * self.TOP_MARGIN_LEFT
+                top_height = 100
+
+                self._score_panel = ScorePanel(self._screen,
+                                               self.TOP_MARGIN_LEFT,
+                                               self.TOP_MARGIN_TOP,
+                                               top_width, top_height)
 
             def update(self, state: SimulationState):
                 self.__draw_background()
-                self.__draw_top(state.current_player, state.player_states)
+                self.__draw_top(state)
                 self.__draw_pigs(state.toss)
                 self.__draw_bottom()
 
@@ -67,19 +72,62 @@ class Display:
             def __draw_background(self):
                 self._screen.fill('white')
 
-            def __draw_top(self, current_player: int,
-                           players: List[PlayerState]):
-                top_width = self.WIDTH - 2 * self.TOP_MARGIN_LEFT
-                top_height = 100
-                rect = (self.TOP_MARGIN_LEFT, self.TOP_MARGIN_TOP,
-                        top_width, top_height)
-                pygame.draw.rect(self._screen, 'gray', rect)
+            def __draw_top(self, state: SimulationState):
+                self._score_panel.draw(state)
 
-                box_width = top_width / len(players)
-                box_height = top_height - 10
+            def __draw_pigs(self, toss: TossData):
+                t1 = toss.t1
+                t2 = toss.t2
+
+                s1 = self._sprite_loader.load_sprite(t1)
+                s2 = self._sprite_loader.load_sprite(t2)
+
+                third_width = int(self.WIDTH / 3)
+                half_height = int(self.HEIGHT / 2)
+                s1_rect = s1.get_rect()
+                s2_rect = s2.get_rect()
+
+                self.__blit(s1, third_width - int(s1_rect.w / 2),
+                            half_height - int(s1_rect.h / 2))
+                self.__blit(s2, 2 * third_width - int(s2.get_rect().w / 2),
+                            half_height - int(s2_rect.h / 2))
+
+            def __draw_bottom(self):
+                pass
+
+            def __blit(self, image: Surface, left: int, top: int):
+                rect = image.get_rect()
+                rect.top = top
+                rect.left = left
+                self._screen.blit(image, rect)
+
+        class ScorePanel:
+            def __init__(self, screen: Surface,
+                         left: int, top: int,
+                         width: int, height: int):
+                self._screen = screen
+                self._left = left
+                self._top = top
+                self._width = width
+                self._height = height
+
+                self._score_font = pygame.font.SysFont(None, 48)
+                self._name_font = pygame.font.SysFont(None, 24)
+
+            def rect(self) -> Tuple[int, int, int, int]:
+                return (self._left, self._top, self._width, self._height)
+
+            def draw(self, state: SimulationState):
+                players = state.player_states
+                current_player = state.current_player
+
+                pygame.draw.rect(self._screen, 'gray', self.rect())
+
+                box_width = self._width / len(players)
+                box_height = self._height - 10
                 for i, ps in enumerate(players):
-                    box_left = int(self.TOP_MARGIN_LEFT + i * box_width)
-                    box_top = self.TOP_MARGIN_TOP + 5
+                    box_left = int(self._left + i * box_width)
+                    box_top = self._top + 5
                     rect = (box_left, box_top,
                             box_width, box_height)
 
@@ -101,26 +149,6 @@ class Display:
                     name_text = self._name_font.render(
                         ps.player.name(), True, 'black')
                     self.__blit(name_text, score_text_left, box_top + 8)
-
-            def __draw_pigs(self, toss: TossData):
-                t1 = toss.t1
-                t2 = toss.t2
-
-                s1 = self._sprite_loader.load_sprite(t1)
-                s2 = self._sprite_loader.load_sprite(t2)
-
-                third_width = int(self.WIDTH / 3)
-                half_height = int(self.HEIGHT / 2)
-                s1_rect = s1.get_rect()
-                s2_rect = s2.get_rect()
-
-                self.__blit(s1, third_width - int(s1_rect.w / 2),
-                            half_height - int(s1_rect.h / 2))
-                self.__blit(s2, 2 * third_width - int(s2.get_rect().w / 2),
-                            half_height - int(s2_rect.h / 2))
-
-            def __draw_bottom(self):
-                pass
 
             def __blit(self, image: Surface, left: int, top: int):
                 rect = image.get_rect()
