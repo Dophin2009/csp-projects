@@ -8,6 +8,9 @@ from .toss import Pig, Tosser, TossResult, TossScorer
 
 
 class Player(ABC):
+    def name(self) -> str:
+        return 'Unnamed'
+
     @abstractmethod
     def turn_choice(self, pci: PlayerChoiceInput):
         raise NotImplementedError(
@@ -77,7 +80,7 @@ class Simulator:
 
 
 class SimulationState:
-    def __init__(self, toss: TossData, current_player: PlayerState,
+    def __init__(self, toss: TossData, current_player: int,
                  player_states: List[PlayerState]):
         self.toss = toss
         self.current_player = current_player
@@ -122,7 +125,7 @@ class Simulation:
                 self.next_player()
                 turn_state.clear()
 
-            yield SimulationState(toss_data, self.current_player_state(),
+            yield SimulationState(toss_data, self._current_player,
                                   self.player_states())
 
     def toss(self, turn_state: TurnState) -> TossData:
