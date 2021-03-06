@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import pygame
 from pygame import Surface
@@ -23,7 +23,7 @@ class Display:
             BOTTOM_MARGIN_LEFT = 30
             BOTTOM_HEIGHT = 150
 
-            TICK_SPEED = 100
+            TICK_SPEED = 1000
 
             def __init__(self):
                 pygame.display.set_caption('Pass the Pigs')
@@ -185,6 +185,13 @@ class _StatPanel:
 
         pygame.draw.rect(self._screen, 'lightgrey', self.rect())
 
+        toss_num = len(self._accumulator.states()) * 2
+        text_img = self._toss_font.render(
+            'Total: {}'.format(toss_num), 'black', True)
+        left = self._left + 10
+        top = self._top + 15
+        self.__blit(text_img, left, top)
+
         toss_counts = self._accumulator.toss_counts()
         toss_rates = self._accumulator.toss_rates()
         for i, (ty, c) in enumerate(toss_counts.items()):
@@ -201,8 +208,7 @@ class _StatPanel:
             text_img = self._toss_font.render(
                 '{}: {} / {:.4f}'.format(name, c, rate), 'black', True)
 
-            left = self._left + 10
-            top = self._top + 21 * i + 15
+            top = self._top + 18 * (i + 1) + 15
             self.__blit(text_img, left, top)
 
         pair_counts = self._accumulator.pair_counts()
@@ -289,7 +295,10 @@ class _StatAccumulator:
         self._toss_total += 2
 
         self._pair_counts[toss.ty] += 1
-        self._pair_total += 2
+        self._pair_total += 1
+
+    def states(self) -> List[SimulationState]:
+        return self._states
 
     def toss_rates(self) -> Dict[TossResult, float]:
         total = self._toss_total

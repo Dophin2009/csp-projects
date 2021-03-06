@@ -107,8 +107,8 @@ class TossPairResult:
     @classmethod
     def from_pair(cls, t1: TossResult, t2: TossResult) -> TossPairResult:
         def is_sider(t1: TossResult, t2: TossResult) -> bool:
-            return t1 == TossResult.SIDE_DOT == t2 \
-                or t1 == TossResult.SIDE_NO_DOT == t2
+            return (t1 == TossResult.SIDE_DOT == t2) \
+                or (t1 == TossResult.SIDE_NO_DOT == t2)
 
         def is_double_razorback(t1: TossResult, t2: TossResult) -> bool:
             return t1 == TossResult.RAZORBACK == t2
@@ -133,11 +133,11 @@ class TossPairResult:
         elif is_double_razorback(t1, t2):
             return TossPairResult.DoubleRazorback()
         elif is_double_trotter(t1, t2):
-            return TossPairResult.DoubleRazorback()
+            return TossPairResult.DoubleTrotter()
         elif is_double_snouter(t1, t2):
-            return TossPairResult.DoubleRazorback()
+            return TossPairResult.DoubleSnouter()
         elif is_double_leaning_jowler(t1, t2):
-            return TossPairResult.DoubleRazorback()
+            return TossPairResult.DoubleLeaningJowler()
         elif is_pig_out(t1, t2):
             return TossPairResult.PigOut(t1, t2)
         else:
