@@ -1,6 +1,7 @@
 from typing import List
 
 import pygame
+
 from passthepigs import Display, Pig, Player, Simulator
 from passthepigs.simulation.ai import RandomPlayer, ThresholdPlayer
 

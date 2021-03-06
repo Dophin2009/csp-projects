@@ -4,7 +4,7 @@ import enum
 from abc import ABC, abstractmethod
 from typing import Generator, List, Optional
 
-from .toss import Pig, Tosser, TossResult, TossScorer
+from .toss import Pig, Tosser, TossPairResult, TossScorer
 
 
 class Player(ABC):
@@ -29,9 +29,8 @@ class PlayerChoiceInput:
 
 
 class TossData:
-    def __init__(self, t1: TossResult, t2: TossResult, score: Optional[int]):
-        self.t1 = t1
-        self.t2 = t2
+    def __init__(self, toss: TossPairResult, score: Optional[int]):
+        self.toss = toss
         self.score = score
 
     def is_pig_out(self) -> bool:
@@ -53,6 +52,11 @@ class PlayerState:
 
     def reset(self):
         self.score = 0
+
+    def clone(self) -> PlayerState:
+        new = PlayerState(self.player)
+        new.score = self.score
+        return new
 
 
 class TurnState:
@@ -120,26 +124,26 @@ class Simulation:
             if turn_choice == TurnChoice.CONTINUE:
                 pass
             elif turn_choice == TurnChoice.STOP:
-                #  print(turn_state.score())
                 self.current_player_state().add_score(turn_state.score())
                 self.next_player()
                 turn_state.clear()
 
             yield SimulationState(toss_data, self._current_player,
-                                  self.player_states())
+                                  self.cloned_player_states())
 
     def toss(self, turn_state: TurnState) -> TossData:
         toss1 = self._tosser.toss(self._p1)
         toss2 = self._tosser.toss(self._p2)
 
-        toss_score = self._scorer.score_pair(toss1, toss2)
+        toss_result = TossPairResult.from_pair(toss1, toss2)
+        toss_score = self._scorer.score_pair(toss_result)
         if toss_score is None:
             # Pig out: reset turn score to 0 and end turn
             turn_state.clear()
         else:
             turn_state.add_score(toss_score)
 
-        return TossData(toss1, toss2, toss_score)
+        return TossData(toss_result, toss_score)
 
     def next_player(self) -> int:
         self._current_player += 1
@@ -158,3 +162,6 @@ class Simulation:
 
     def current_player_state(self) -> PlayerState:
         return self._players[self._current_player]
+
+    def cloned_player_states(self) -> List[PlayerState]:
+        return [ps.clone() for ps in self._players]

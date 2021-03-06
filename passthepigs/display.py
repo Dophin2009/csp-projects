@@ -26,15 +26,15 @@ class Display:
                 self._clock = Clock()
 
                 sprite_dir = os.path.join(this_dir(), 'sprites')
-                self._sprite_loader = PigSpriteLoader(sprite_dir)
+                self._sprite_loader = _PigSpriteLoader(sprite_dir)
 
                 top_width = self.WIDTH - 2 * self.TOP_MARGIN_LEFT
                 top_height = 100
 
-                self._score_panel = ScorePanel(self._screen,
-                                               self.TOP_MARGIN_LEFT,
-                                               self.TOP_MARGIN_TOP,
-                                               top_width, top_height)
+                self._score_panel = _ScorePanel(self._screen,
+                                                self.TOP_MARGIN_LEFT,
+                                                self.TOP_MARGIN_TOP,
+                                                top_width, top_height)
 
             def update(self, state: SimulationState):
                 self.__draw_background()
@@ -52,8 +52,7 @@ class Display:
                 self._score_panel.draw(state)
 
             def __draw_pigs(self, toss: TossData):
-                t1 = toss.t1
-                t2 = toss.t2
+                t1, t2 = toss.toss.to_pair()
 
                 s1 = self._sprite_loader.load_sprite(t1)
                 s2 = self._sprite_loader.load_sprite(t2)
@@ -77,61 +76,6 @@ class Display:
                 rect.left = left
                 self._screen.blit(image, rect)
 
-        class ScorePanel:
-            def __init__(self, screen: Surface,
-                         left: int, top: int,
-                         width: int, height: int):
-                self._screen = screen
-                self._left = left
-                self._top = top
-                self._width = width
-                self._height = height
-
-                self._score_font = pygame.font.SysFont(None, 48)
-                self._name_font = pygame.font.SysFont(None, 24)
-
-            def rect(self) -> Tuple[int, int, int, int]:
-                return (self._left, self._top, self._width, self._height)
-
-            def draw(self, state: SimulationState):
-                players = state.player_states
-                current_player = state.current_player
-
-                pygame.draw.rect(self._screen, 'gray', self.rect())
-
-                box_width = self._width / len(players)
-                box_height = self._height - 10
-                for i, ps in enumerate(players):
-                    box_left = int(self._left + i * box_width)
-                    box_top = self._top + 5
-                    rect = (box_left, box_top,
-                            box_width, box_height)
-
-                    if i == current_player:
-                        box_color = 'lightblue'
-                    else:
-                        box_color = 'lightgrey'
-                    pygame.draw.rect(self._screen, box_color, rect)
-
-                    score_text = self._score_font.render(
-                        str(ps.score), True, 'black')
-                    score_text_rect = score_text.get_rect()
-                    score_text_height = score_text_rect.h
-                    score_text_left = box_left + 10
-                    score_text_top = int(
-                        box_top + box_height / 2 - score_text_height / 2)
-                    self.__blit(score_text, score_text_left, score_text_top)
-
-                    name_text = self._name_font.render(
-                        ps.player.name(), True, 'black')
-                    self.__blit(name_text, score_text_left, box_top + 8)
-
-            def __blit(self, image: Surface, left: int, top: int):
-                rect = image.get_rect()
-                rect.top = top
-                rect.left = left
-                self._screen.blit(image, rect)
-
         pygame.init()
         return DisplayInner()
 
@@ -139,7 +83,63 @@ class Display:
         pygame.quit()
 
 
-class PigSpriteLoader:
+class _ScorePanel:
+    def __init__(self, screen: Surface,
+                 left: int, top: int,
+                 width: int, height: int):
+        self._screen = screen
+        self._left = left
+        self._top = top
+        self._width = width
+        self._height = height
+
+        self._score_font = pygame.font.SysFont(None, 48)
+        self._name_font = pygame.font.SysFont(None, 24)
+
+    def rect(self) -> Tuple[int, int, int, int]:
+        return (self._left, self._top, self._width, self._height)
+
+    def draw(self, state: SimulationState):
+        players = state.player_states
+        current_player = state.current_player
+
+        pygame.draw.rect(self._screen, 'gray', self.rect())
+
+        box_width = self._width / len(players)
+        box_height = self._height - 10
+        for i, ps in enumerate(players):
+            box_left = int(self._left + i * box_width)
+            box_top = self._top + 5
+            rect = (box_left, box_top,
+                    box_width, box_height)
+
+            if i == current_player:
+                box_color = 'lightblue'
+            else:
+                box_color = 'lightgrey'
+            pygame.draw.rect(self._screen, box_color, rect)
+
+            score_text = self._score_font.render(
+                str(ps.score), True, 'black')
+            score_text_rect = score_text.get_rect()
+            score_text_height = score_text_rect.h
+            score_text_left = box_left + 10
+            score_text_top = int(
+                box_top + box_height / 2 - score_text_height / 2)
+            self.__blit(score_text, score_text_left, score_text_top)
+
+            name_text = self._name_font.render(
+                ps.player.name(), True, 'black')
+            self.__blit(name_text, score_text_left, box_top + 8)
+
+    def __blit(self, image: Surface, left: int, top: int):
+        rect = image.get_rect()
+        rect.top = top
+        rect.left = left
+        self._screen.blit(image, rect)
+
+
+class _PigSpriteLoader:
     _MAP = {
         TossResult.SIDE_DOT: 'side_dot',
         TossResult.SIDE_NO_DOT: 'side_no_dot',
