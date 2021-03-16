@@ -10,7 +10,11 @@ from .simulation.toss import TossPairResultType, TossResult
 
 
 class Display:
+    def __init__(self, tick_speed: int = 5):
+        self._tick_speed = tick_speed
+
     def __enter__(self):
+        """Resource implementation for pygame display."""
         class DisplayInner:
             WIDTH = 600
             HEIGHT = 600
@@ -23,9 +27,10 @@ class Display:
             BOTTOM_MARGIN_LEFT = 30
             BOTTOM_HEIGHT = 150
 
-            TICK_SPEED = 1000
+            def __init__(self, tick_speed: int):
+                """Initialize necessary variables for the display."""
+                self._tick_speed = tick_speed
 
-            def __init__(self):
                 pygame.display.set_caption('Pass the Pigs')
                 self._screen = pygame.display.set_mode(
                     [self.WIDTH, self.HEIGHT])
@@ -52,21 +57,25 @@ class Display:
                                               bottom_width, bottom_height)
 
             def update(self, state: SimulationState):
+                """Redraw the display."""
                 self.__draw_background()
                 self.__draw_top(state)
                 self.__draw_pigs(state.toss)
                 self.__draw_bottom(state)
 
                 pygame.display.flip()
-                self._clock.tick(self.TICK_SPEED)
+                self._clock.tick(self._tick_speed)
 
             def __draw_background(self):
+                """Draw the background."""
                 self._screen.fill('white')
 
             def __draw_top(self, state: SimulationState):
+                """Draw the top score panel."""
                 self._score_panel.draw(state)
 
             def __draw_pigs(self, toss: TossData):
+                """Draw the pig sprites according to the toss data."""
                 t1, t2 = toss.toss.to_pair()
 
                 s1 = self._sprite_loader.load_sprite(t1)
@@ -83,6 +92,7 @@ class Display:
                             half_height - int(s2_rect.h / 2))
 
             def __draw_bottom(self, state: SimulationState):
+                """Draw the bottom statistics panel."""
                 self._stat_panel.draw(state)
 
             def __blit(self, image: Surface, left: int, top: int):
@@ -92,7 +102,7 @@ class Display:
                 self._screen.blit(image, rect)
 
         pygame.init()
-        return DisplayInner()
+        return DisplayInner(self._tick_speed)
 
     def __exit__(self, exc_type, exc_value, traceback):
         pygame.quit()
@@ -116,6 +126,10 @@ class _ScorePanel:
         return (self._left, self._top, self._width, self._height)
 
     def draw(self, state: SimulationState):
+        """
+        Draw score information for each player, with names, total scores,
+        and turn states.
+        """
         players = state.player_states
         current_player = state.current_player
 
@@ -181,6 +195,7 @@ class _StatPanel:
         return (self._left, self._top, self._width, self._height)
 
     def draw(self, state: SimulationState):
+        """Draw the counts and rates for pig tosses and toss pair results."""
         self._accumulator.fold_in(state)
 
         pygame.draw.rect(self._screen, 'lightgrey', self.rect())
@@ -256,6 +271,10 @@ class _PigSpriteLoader:
         self._cache: Dict[TossResult, Surface] = {}
 
     def load_sprite(self, t: TossResult) -> Surface:
+        """
+        Load the corresponding sprite of the toss result into a pygame
+        Surface.
+        """
         if t in self._cache.keys():
             return self._cache[t]
 
@@ -269,9 +288,11 @@ class _PigSpriteLoader:
         return sprite
 
     def get_sprite_name(self, t: TossResult) -> str:
+        """Map the given toss result to its sprite name."""
         return self._NAME_MAP[t]
 
     def resolve_image_path(self, name: str) -> str:
+        """Resolve the path of the sprite image file by its name."""
         return os.path.join(self._sprite_dir, '{}.png'.format(name))
 
 
@@ -285,6 +306,7 @@ class _StatAccumulator:
         self._pair_total = 0
 
     def fold_in(self, state: SimulationState):
+        """Process a new simulation state and update internal values."""
         self._states.append(state)
 
         toss = state.toss.toss
@@ -298,23 +320,28 @@ class _StatAccumulator:
         self._pair_total += 1
 
     def states(self) -> List[SimulationState]:
+        """Return the list of stored simulation states."""
         return self._states
 
     def toss_rates(self) -> Dict[TossResult, float]:
+        """Return the rates for each toss result type."""
         total = self._toss_total
         return {k: c / total for k, c in self._toss_counts.items()}
 
     def pair_rates(self) -> Dict[TossPairResultType, float]:
+        """Return the rates for each toss pair result type."""
         total = self._pair_total
         return {k: c / total for k, c in self._pair_counts.items()}
 
     def toss_counts(self) -> Dict[TossResult, int]:
+        """Return the counts for each toss result type."""
         return self._toss_counts
 
     def pair_counts(self) -> Dict[TossPairResultType, int]:
+        """Return the counts for each toss pair result type."""
         return self._pair_counts
 
 
 def this_dir() -> str:
-    return os.path.dirname(os.path.abspath(__file__))
+    """Return the absolute path of the current module."""
     return os.path.dirname(os.path.abspath(__file__))

@@ -11,10 +11,11 @@ class PassThePigs:
         self._simulator = Simulator(players, p1, p2)
 
     def play(self):
+        """Initialize the simulation and display with pygame."""
         simulation = self._simulator.simulate()
         simgen = simulation.run()
 
-        with Display() as display:
+        with Display(1000) as display:
             playing = True
             stopped = False
             while not stopped:

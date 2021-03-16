@@ -7,6 +7,11 @@ from . import Player, PlayerChoiceInput, TurnChoice
 
 
 class RandomPlayer(Player):
+    """
+    AI player implementation that has a random chance (`stop_rate`) to end
+    their turn each toss.
+    """
+
     def __init__(self, stop_rate: float, name: Optional[str] = None):
         self._name = name or 'Random({:.2f})'.format(stop_rate)
         self._stop_rate = stop_rate
@@ -22,6 +27,11 @@ class RandomPlayer(Player):
 
 
 class ThresholdPlayer(Player):
+    """
+    AI player implementation that will choose to end their turn once the turn
+    score reaches the threshold (`score_threshold`).
+    """
+
     def __init__(self, score_threshold: int, name: Optional[str] = None):
         self._name = name or 'Threshold({})'.format(score_threshold)
         self._score_threshold = score_threshold
