@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 import re
 import sys
 from typing import List, Optional
 
 from grocerydb import Inventory, InventoryLoader
+from grocerydb.inventory import InsufficientInventoryError, ItemNotFoundError
 
 
 def main() -> None:
@@ -79,21 +81,19 @@ class GroceryDB:
     load        Load the inventory from a file
     save        Save the inventory to a file
     exit        Exit GroceryDB
+
+Spaces are the devil
 '''
             print(help_str)
 
         return False
 
     def ls_cmd(self, args: List[str]) -> bool:
-        if len(args) < 1:
-            searchterm = None
-        elif len(args) > 1:
-            print('ls expected <= 1 args: [searchterm]')
+        if len(args) > 0:
+            print('ls expected 0 args')
             return False
-        else:
-            searchterm = args[0]
 
-        self.show_inventory(searchterm)
+        self.show_inventory()
         return False
 
     def add_cmd(self, args: List[str]) -> bool:
@@ -104,8 +104,23 @@ class GroceryDB:
             print(help_str)
         else:
             name = args[0]
-            price = float(args[1])
-            stock = int(args[2])
+
+            try:
+                price = float(args[1])
+            except ValueError:
+                printerr('Invalid <price> specified')
+                return False
+            if price < 0:
+                printerr('Negative <price> specified')
+
+            try:
+                stock = int(args[2])
+            except ValueError:
+                printerr('Invalid <stock> specified')
+                return False
+            if stock < 0:
+                printerr('Negative <stock> specified')
+
             self.add_item(name, price, stock)
 
         return False
@@ -118,8 +133,20 @@ class GroceryDB:
             print(help_str)
         else:
             name = args[0]
-            amount = int(args[1])
-            self.restock_item(name, amount)
+
+            try:
+                amount = int(args[1])
+            except ValueError:
+                printerr('Invalid <amount> specified')
+                return False
+
+            if amount < 0:
+                printerr('Negative <amount> specified')
+
+            try:
+                self.restock_item(name, amount)
+            except ItemNotFoundError as e:
+                printerr(e.message)
 
         return False
 
@@ -131,8 +158,23 @@ class GroceryDB:
             print(help_str)
         else:
             name = args[0]
-            amount = int(args[1])
-            self.buy_item(name, amount)
+
+            try:
+                amount = int(args[1])
+            except ValueError:
+                printerr('Invalid <amount> specified')
+                return False
+
+            if amount < 0:
+                printerr('Negative <amount> specified')
+
+            try:
+                self.buy_item(name, amount)
+            except ItemNotFoundError as e:
+                printerr(e.message)
+            except InsufficientInventoryError as e:
+                printerr('{} has stock of {}; cannot remove {}'.format(
+                    name, e.total, e.diff))
 
         return False
 
@@ -169,16 +211,26 @@ class GroceryDB:
         print('{} not found'.format(cmd))
         return False
 
-    def show_inventory(self, searchterm: Optional[str]) -> None:
+    def show_inventory(self) -> None:
         format_row = '{:<12}' * 3
         print(format_row.format('Name', 'Price', 'Stock'))
 
         items = self.__inventory.items()
-        if searchterm is not None:
-            items = [data for data in items if searchterm in data[0]]
-
         for name, price, stock in items:
             print(format_row.format(name, price, stock))
+
+        print()
+
+        total_cost = sum(map(lambda item: item[1] * item[2], items))
+        print('Total cost: {}'.format(total_cost))
+
+        low_stock = [item for item in items if item[2] < 5]
+        if len(low_stock) > 0:
+            print()
+            print('Low stock:')
+            for name, _, stock in low_stock:
+                format_row = '{:<12}' * 2
+                print(format_row.format(name, stock))
 
     def add_item(self, name: str, price: float, stock: int) -> None:
         self.__inventory.create(name, price, stock)
@@ -196,5 +248,15 @@ class GroceryDB:
         self.__loader.save(filepath)
 
 
+def printerr(message: str) -> None:
+    print('error: {}'.format(message))
+
+
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
