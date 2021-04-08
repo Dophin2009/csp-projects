@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import pathlib
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Dict, Iterator, List, Union
+from typing import Dict, Iterator
+
+from .tokenize import Tokenizer
 
 
 class Chain:
     def __init__(self):
-        self.__inner: Dict[str, Dict[str, int]] = Dict()
+        self.__inner: Dict[str, Dict[str, int]] = dict()
 
     def rand_suffix(self, prefix: str) -> str:
         # TODO: unimplemented!
@@ -25,25 +25,31 @@ class Chain:
             self.__inner[prefix] = {suffix: 1}
 
 
-PathLike = Union[str, pathlib.Path]
-
-
-@dataclass
-class SplitConfig:
-    punctuation: List[str]
-    split: str
-
-
 class ChainBuilder:
-    __default_config = SplitConfig(punctuation=['.', ',', '?', '!', '(',
-                                                ')', '[', ']', "'", '"'],
-                                   split=' ')
-
     def __init__(self) -> None:
-        self.__config = self.__class__.__default_config
+        self.__tokenizer = Tokenizer()
         self.__chain = Chain()
 
     def add(self, text: Text) -> ChainBuilder:
+        chain = self.__chain
+        for line in text.lines():
+            if len(line) == 0:
+                continue
+
+            units = self.__tokenizer.tokenize(line)
+            if len(units) <= 1:
+                prefix = ''
+                continue
+
+            prefix = ''
+            for unit in units:
+                if len(unit) == 0:
+                    continue
+                print(unit)
+
+                chain._insert(prefix, unit)
+                prefix = unit
+
         return self
 
     def finish(self) -> Chain:

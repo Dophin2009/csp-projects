@@ -1,20 +1,24 @@
 from pathlib import Path
 from typing import List
 
-from .markov import ChainBuilder
+from .markov import Chain, ChainBuilder
 from .markov.text import FileText
 
 
 def main():
+    chain = build_chain()
+
+
+def build_chain() -> Chain:
     builder = ChainBuilder()
-    for p in __corpus_filepaths():
+    for p in corpus_filepaths():
         with open(p, 'r') as f:
             builder.add(FileText(f))
 
-    _ = builder.finish()
+    return builder.finish()
 
 
-def __corpus_filepaths() -> List[Path]:
+def corpus_filepaths() -> List[Path]:
     corpus_dir = __here().joinpath('corpus')
     return [p for p in corpus_dir.iterdir() if p.is_file()]
 

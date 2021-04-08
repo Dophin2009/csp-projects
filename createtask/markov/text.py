@@ -1,4 +1,4 @@
-from io import TextIO
+from io import TextIOWrapper
 from typing import Iterator
 
 from .chain import Text
@@ -11,8 +11,8 @@ class FileText(Text):
     file.
     """
 
-    def __init__(self, f: TextIO) -> None:
+    def __init__(self, f: TextIOWrapper) -> None:
         self.__inner = f
 
     def lines(self) -> Iterator[str]:
-        return self.__inner
+        return map(lambda line: line.rstrip(), self.__inner)
