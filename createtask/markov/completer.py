@@ -18,19 +18,17 @@ class Completer:
         else:
             self.__rand = rand
 
-    def sentence(self, prefix: Prefix = (), min_n: int = 0) -> List[str]:
+    def sentences(self, prefix: Prefix = (),
+                  min_n: int = 3, min_c: int = 0) -> List[str]:
         """
-        Given a prefix, complete the sentence.
+        Given a prefix, complete multiple sentences.
         """
-        def is_ending(s: Suffix) -> bool:
-            for ending in self.ENDINGS:
-                if s == ending or s[-1] == ending:
-                    return True
-            return False
-
         max_state_size = self.__max_state_size()
+        if max_state_size is None:
+            return []
 
         n = 0
+        c = 0
         sent = []
         while True:
             suffix = self.suffix_any(prefix)
@@ -39,9 +37,11 @@ class Completer:
             else:
                 break
 
-            n += 1
-            if n > min_n and is_ending(suffix):
-                break
+            c += 1
+            if self.__is_ending(suffix):
+                n += 1
+                if n > min_n and c > min_c:
+                    break
 
             if len(prefix) == max_state_size:
                 prefix = (*prefix[1:], suffix)
@@ -49,6 +49,12 @@ class Completer:
                 prefix = (*prefix, suffix)
 
         return sent
+
+    def sentence(self, prefix: Prefix = (), min_c: int = 0) -> List[str]:
+        """
+        Given a prefix, complete the sentence.
+        """
+        return self.sentences(prefix, 1, min_c)
 
     def suffix_n(self, prefix: Prefix, n: int) -> Optional[List[str]]:
         """
@@ -129,7 +135,13 @@ class Completer:
         else:
             return None
 
-    def __max_state_size(self) -> int:
+    def __is_ending(self, s: Suffix) -> bool:
+        for ending in self.ENDINGS:
+            if s == ending:
+                return True
+        return False
+
+    def __max_state_size(self) -> Optional[int]:
         max_state_size = self.__chain.state_sizes()
         if len(max_state_size) == 0:
             return None

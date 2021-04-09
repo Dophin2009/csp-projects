@@ -12,7 +12,7 @@ def main():
     completer = Completer(chain)
 
     prefix = ('After',)
-    sent_tokens = [*prefix, *completer.sentence(prefix)]
+    sent_tokens = [*prefix, *completer.sentences(prefix)]
 
     tokenizer = Tokenizer()
     sent = tokenizer.detokenize(sent_tokens)
@@ -20,7 +20,7 @@ def main():
 
 
 def build_chain() -> Chain:
-    builder = ChainBuilder(max_state_size=3)
+    builder = ChainBuilder(max_state_size=5)
     for p in corpus_filepaths():
         with open(p, 'r') as f:
             builder.add(FileText(f))
