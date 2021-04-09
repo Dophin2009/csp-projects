@@ -1,3 +1,4 @@
+import re
 from io import TextIOWrapper
 from typing import Iterator
 
@@ -11,8 +12,20 @@ class FileText(Text):
     file.
     """
 
+    CLEANERS = [
+        (re.compile(r'“|”|‟'), '"'),
+    ]
+
     def __init__(self, f: TextIOWrapper) -> None:
         self.__inner = f
 
     def lines(self) -> Iterator[str]:
-        return map(lambda line: line.rstrip(), self.__inner)
+        return map(lambda line: self.__clean(line), self.__inner)
+
+    def __clean(self, s: str) -> str:
+        s = s.rstrip()
+
+        for regexp, substitution in self.CLEANERS:
+            s = regexp.sub(substitution, s)
+
+        return s

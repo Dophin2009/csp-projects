@@ -1,18 +1,28 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator
+from typing import Dict, Iterator, List, Optional
 
 from .tokenize import Tokenizer
+
+ChainDict = Dict[str, Dict[str, int]]
 
 
 class Chain:
     def __init__(self):
-        self.__inner: Dict[str, Dict[str, int]] = dict()
+        self.__inner: ChainDict = dict()
 
-    def rand_suffix(self, prefix: str) -> str:
-        # TODO: unimplemented!
-        return ''
+    def prefixes(self) -> List[str]:
+        return list(self.__inner)
+
+    def suffixes_of(self, prefix: str) -> Optional[Dict[str, int]]:
+        if prefix in self.__inner:
+            return self.__inner[prefix]
+        else:
+            return None
+
+    def inner(self) -> ChainDict:
+        return self.__inner
 
     def _insert(self, prefix: str, suffix: str) -> None:
         if prefix in self.__inner:
@@ -45,7 +55,6 @@ class ChainBuilder:
             for unit in units:
                 if len(unit) == 0:
                     continue
-                print(unit)
 
                 chain._insert(prefix, unit)
                 prefix = unit

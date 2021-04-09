@@ -1,12 +1,22 @@
 from pathlib import Path
 from typing import List
 
-from .markov import Chain, ChainBuilder
+from .markov import Chain, ChainBuilder, Completer
 from .markov.text import FileText
+from .markov.tokenize import Detokenizer
 
 
 def main():
     chain = build_chain()
+
+    completer = Completer(chain)
+
+    completed = completer.sentence('After', 5)
+    sent_tokens = ['After'] + completed
+
+    detokenizer = Detokenizer()
+    sent = detokenizer.detokenize(sent_tokens)
+    print(sent)
 
 
 def build_chain() -> Chain:
