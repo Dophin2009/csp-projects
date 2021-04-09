@@ -10,8 +10,10 @@ from .chain import Chain, Prefix, Suffix
 class Completer:
     ENDINGS = ['.', '?', '!', '…']
 
-    def __init__(self, chain: Chain, rand: Optional[Random] = None) -> None:
+    def __init__(self, chain: Chain, max_state_size: Optional[int] = None,
+                 rand: Optional[Random] = None) -> None:
         self.__chain = chain
+        self.__max_state_size = max_state_size
 
         if rand is None:
             self.__rand = Random(datetime.now())
@@ -23,7 +25,7 @@ class Completer:
         """
         Given a prefix, complete multiple sentences.
         """
-        max_state_size = self.__max_state_size()
+        max_state_size = self.max_state_size()
         if max_state_size is None:
             return []
 
@@ -61,7 +63,7 @@ class Completer:
         Given a prefix, produce a list of n suffixes, using the latest suffixes
         as prefixes for the next.
         """
-        max_state_size = self.__max_state_size()
+        max_state_size = self.max_state_size()
 
         ret = []
         for _ in range(0, n):
@@ -141,8 +143,12 @@ class Completer:
                 return True
         return False
 
-    def __max_state_size(self) -> Optional[int]:
+    def max_state_size(self) -> Optional[int]:
+        if self.__max_state_size is not None:
+            return self.__max_state_size
+
         max_state_size = self.__chain.state_sizes()
         if len(max_state_size) == 0:
             return None
+
         return sorted(max_state_size, reverse=True)[0]
