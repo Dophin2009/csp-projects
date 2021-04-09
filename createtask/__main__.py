@@ -3,7 +3,7 @@ from typing import List
 
 from .markov import Chain, ChainBuilder, Completer
 from .markov.text import FileText
-from .markov.tokenize import Detokenizer
+from .markov.tokenize import Tokenizer
 
 
 def main():
@@ -11,16 +11,16 @@ def main():
 
     completer = Completer(chain)
 
-    completed = completer.sentence('After', 5)
-    sent_tokens = ['After'] + completed
+    prefix = ('After',)
+    sent_tokens = [*prefix, *completer.sentence(prefix)]
 
-    detokenizer = Detokenizer()
-    sent = detokenizer.detokenize(sent_tokens)
+    tokenizer = Tokenizer()
+    sent = tokenizer.detokenize(sent_tokens)
     print(sent)
 
 
 def build_chain() -> Chain:
-    builder = ChainBuilder()
+    builder = ChainBuilder(max_state_size=3)
     for p in corpus_filepaths():
         with open(p, 'r') as f:
             builder.add(FileText(f))

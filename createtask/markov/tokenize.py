@@ -3,6 +3,18 @@ from typing import List
 
 
 class Tokenizer:
+    def __init__(self) -> None:
+        self.__tokenizer = _Tokenizer()
+        self.__detokenizer = _Detokenizer()
+
+    def tokenize(self, text: str) -> List[str]:
+        return self.__tokenizer.tokenize(text)
+
+    def detokenize(self, tokens: List[str]) -> str:
+        return self.__detokenizer.detokenize(tokens)
+
+
+class _Tokenizer:
     """
     English tokenizer adapted from NLTK implementation of Penn Treebank, except
     standard contractions are not split.
@@ -57,7 +69,7 @@ class Tokenizer:
         return text.split(' ')
 
 
-class Detokenizer:
+class _Detokenizer:
     ENDING_QUOTES = [
         (re.compile(r"([^' ])\s('ll|'LL|'re|'RE|'ve|'VE|n't|N'T) "), r"\1\2 "),
         (re.compile(r"([^' ])\s('[sS]|'[mM]|'[dD]|') "), r"\1\2 "),
