@@ -29,3 +29,20 @@ class FileText(Text):
             s = regexp.sub(substitution, s)
 
         return s
+
+
+class LineTexts:
+    def __init__(self, text: Text):
+        self.__text = text
+
+    def texts(self) -> Iterator[Text]:
+        return map(lambda line: StringText(line), self.__text.lines())
+
+
+class StringText(Text):
+
+    def __init__(self, inner: str):
+        self.__inner = inner
+
+    def lines(self) -> Iterator[str]:
+        return [self.__inner].__iter__()
