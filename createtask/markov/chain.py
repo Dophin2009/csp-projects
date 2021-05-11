@@ -35,7 +35,7 @@ class Chain:
     def state_sizes(self) -> List[int]:
         return list(self.__inner.keys())
 
-    def _insert(self, prefix: Prefix, suffix: Suffix) -> None:
+    def insert(self, prefix: Prefix, suffix: Suffix) -> None:
         state_size = len(prefix)
 
         if state_size not in self.__inner:
@@ -80,13 +80,13 @@ class ChainBuilder:
                     state = previous[state_size]
 
                     if state.is_filled():
-                        chain._insert(state.pieces, unit)
+                        chain.insert(state.pieces, unit)
                         is_start = False
 
                     state.shift_new(unit)
 
                 if is_start:
-                    chain._insert(tuple(), unit)
+                    chain.insert(tuple(), unit)
 
         return self
 

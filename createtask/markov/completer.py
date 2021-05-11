@@ -45,8 +45,9 @@ class Completer:
                 if n > min_n and c > min_c:
                     break
 
-            if len(prefix) == max_state_size:
-                prefix = (*prefix[1:], suffix)
+            if len(prefix) >= max_state_size:
+                start = len(prefix) - max_state_size + 1
+                prefix = (*prefix[start:], suffix)
             else:
                 prefix = (*prefix, suffix)
 
@@ -151,4 +152,4 @@ class Completer:
         if len(max_state_size) == 0:
             return None
 
-        return sorted(max_state_size, reverse=True)[0]
+        return max(max_state_size)
